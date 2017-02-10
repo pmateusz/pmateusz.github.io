@@ -97,6 +97,7 @@ Consider installing useful for Python and Latex.
 $ code --install-extension donjayamanne.python
 $ code --install-extension ms-vscode.latex
 $ code --install-extension mathiasfrohlich.latexcompile
+$ code --install-extension ajshort.latex-preview
 ```
 
 ### Install Latex
