@@ -301,4 +301,149 @@ Then the robust counterpart is:
 \end{block}
 \end{frame}
 
+\begin{frame}{Polyhedral Uncertainty}
+Polyhedral uncertainty can be viewed as a special case of ellipsoidal uncertainty.
+When $U$ is polyhedral, the subproblem becomes linear, and the robust counterpart is equivalent to a linear optimization problem.
+
+\begin{align*}
+\begin{split}
+\min~&c^Tx \\
+subject~to~\max_{D_i a_i \leq d_i} &a_{i}^{T}x \leq b_{i}, i=1,\dots,m
+\end{split}
+\end{align*}
+
+$\Updownarrow$
+
+\begin{align*}
+\begin{split}
+& min ~ c^Tx  \\
+subject~to~& p_i^Td_i \leq b_i, i=1,\dots,m\\
+& p_i^TD_i = x, i=1,\dots,m \\
+& p_i \geq 0, i=1,\dots,m
+\end{split}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Cardinality Constrained Uncertainty}
+A family of polyhedral uncertainty sets that encode a budget of uncertainty in terms pf cardinality constraints: the number of parameters of the problem that are allowed to vary from their nominal values.
+We allow at most $\Gamma_{i}$ coefficients of row $i$ to deviate.
+The positive number $\Gamma_{i}$ denotes the budget of uncertainty for the $i^{th}$ constraint
+Just as ellipsoidal sizing, it controls the trade-off between the optimiality of the solution, and its robustness to a parameter perturbation.
+\end{frame}
+
+\begin{frame}{}
+\begin{align*}
+\begin{split}
+& \min : c^Tx \\
+subject~to~&~\sum_ja_{ij}x_{j} + \max_{S_i\subseteq J_i:|S_i|=\Gamma_i} \sum_{j \in S_j}\hat{a}_{ij}y_j \leq b_i, 1 \leq i \leq m \\
+& -y_j \leq x_j \leq y_j \\
+& l \leq x \leq u \\
+& y \geq 0
+\end{split}
+\end{align*}
+
+\begin{align*}
+\begin{split}
+& \max c^Tx \\
+& subject~to~\sum_{j}a_{ij}x_{j} + z_{i}\Gamma_{i} + \sum_{j}p_{ij} \leq b_i, \forall i \\
+& z_i + p_{ij} \geq \hat{a}_{ij}y_{j} \forall i,j \\
+& -y_i \leq x_j \leq y_j \forall j \\
+& l \leq x \leq u \\
+& p \geq 0 \\
+& y \geq 0
+\end{split}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Norm Uncertainty}
+Robust Linear Optimization problems with uncertainty sets described by more general norms lead to convex optimization problems with constraints related to the dual norm.
+
+\begin{align*}
+U = \{A : \lvert M(vec(A) - vec(\bar{A})) \rvert \leq \triangle\}
+\end{align*}
+\begin{description}
+\item [$M$] an invertible matrix
+\item [$\bar{A}$] any constant matrix
+\item [$\lvert \cdot \rvert$] any norm
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+\begin{align*}
+\begin{split}
+& \min c^Tx \\
+& subject~to~\hat{A}_{i}^{T}x + \triangle \lvert (M^T)^-1x_i \rvert ^{*} \leq b_i, i=1,\dots,m
+\end{split}
+\end{align*}
+\begin{description}
+\item [$x_i \in \mathbb{R}^{(m \cdot n)\times1}$] is a vector that contains $x \in \mathbb{R}^{n}$ in entries $(i-1)\cdot + 1$ through $i \cdot n$ and 0 everywhere else
+\item [$\lvert \cdot \rvert$] is the corresponding dual norm of $\lvert \cdot \rvert$
+\end{description}
+$l_1$ and $l_{\inf}$ norms result in linear optimization problems \\
+$l_2$ norm results in a second-order cone problem
+\end{frame}
+
+\begin{frame}{Robust Quadratic Optimization}
+\begin{block}{Quadratically Constrained Quadratic Programs (QCQP)}
+Defining function:
+\begin{align*}
+f_{i}(x,u_i) = \lVert A_ix \rVert ^{2} + b_i^Tx + c_i
+\end{align*}
+\end{block}
+\begin{block}{Second Order Cone Programs (SOCP)}
+Defining function:
+\begin{align*}
+f_{i}(x, u_i) = \lVert A_ix + b_i \rVert - c_i^Tx - d_i
+\end{align*}
+\end{block}
+For both classes, if the uncertainty set $U$ is a single ellipsoid the robust counterpart is a semidefinite optimization problem.
+If $U$ is polyhedral or the intersection of ellipsoids, the robust counterpart is NP-hard.
+\end{frame}
+
+\begin{frame}{Simple Ellipsoidal Uncertainty Example}
+Quadratic constraint: \\
+\begin{align}
+x^{T}A^{T}Ax \leq 2b^Tx + c, \forall (A,b,c) \in U
+\end{align}
+
+$U$ is an ellipsoid about a nominal point $(A^{0}, b^{0}, c^{0})$:
+\begin{align}
+U \triangleq \{ (A,b,c) := (A^{0},b^{0},c^{0}) + \sum^{L}_{l=1}u_{l}(A^{l},b^{l},c^{l}) : \lVert u \rVert_{2} \leq 1 \}
+\end{align}
+Problem:
+\begin{align*}
+\begin{split}
+\left[
+    \begin{array}{l}
+        \max : x^{T}A^{T}Ax - 2b^{T}x - c \\
+        subject~to~: (A,b,c) \in U
+    \end{array}
+\right] \leq 0
+\end{split}
+\end{align*}
+\end{frame}
+
+\begin{frame}{}
+The problem is maximizing a convex quadratic therefore is not convex. \\
+It enjoys a hidden convexity property that allows it to be reformulated as a convex semidefinite optimization problem. This is related to $S-lemma$.
+The lemma gives the boundary between what we can solve exactly, and where solving the subproblem becomes difficult.
+If the uncertainty set is an intersection of ellipsoids or polyhedral, then exact solution of the subproblem is NP-hard.
+Taking the dual of the SDP resulting from the S-lemma, we have an exact, convex refolmulation of the subproblem in the RO problem.
+\end{frame}
+
+\begin{frame}{}
+\begin{block}{}
+Given a vector $x$, it is feasible to the robust constraint if and only if there exists a scalar $\tau \in \mathbb{R}$ such that the following matrix inequality holds:
+\begin{align*}
+    \begin{bmatrix}
+    c^0 + 2x^Tb^0 - \tau & \frac{1}{2}c^1+x^Tb^1 & \dots & c^L+x^Tb^L & \left(A^{0}x\right)^{T} \\
+    \frac{1}{2}c^{1} + x^Tb^{1} & \tau & & & \left(A^{1}x\right)^{T} \\
+    \vdots & & \ddots & & \vdots \\
+    \frac{1}{2}c^{L} + x^{T}b^{L} & & & \tau & \left(A^{L}x\right)^{T} \\
+    A^{0}x & A^{1}x & \dots & A^{L}x & I
+    \end{bmatrix} \succeq 0
+\end{align*}
+\end{block}
+\end{frame}
+
 \end{document}
