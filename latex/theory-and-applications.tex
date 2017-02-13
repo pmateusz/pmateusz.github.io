@@ -1,0 +1,304 @@
+\documentclass{beamer}
+
+\mode<presentation> {
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[Short title]{Library Notes}
+
+%\author{Mateusz Polnik}
+%\institute[]
+%{
+%University of Strahclyde \\
+%\medskip
+%\textit{mateusz.polnik@strath.ac.uk}
+%}
+%\date{\today}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Overview}
+\tableofcontents
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+%------------------------------------------------
+\section{Theory and Applications of Robust Optimization}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+@article{10.2307/23070141,
+ ISSN = {00361445},
+ URL = {http://www.jstor.org/stable/23070141},
+ abstract = {In this paper we survey the primary research, both theoretical and applied, in the area of robust optimization (RO). Our focus is on the computational attractiveness of RO approaches, as well as the modeling power and broad applicability of the methodology. In addition to surveying prominent theoretical results of RO, we also present some recent results linking RO to adaptable models for multistage decision-making problems. Finally, we highlight applications of RO across a wide spectrum of domains, including finance, statistics, learning, and various areas of engineering.},
+ author = {Dimitris Bertsimas and David B. Brown and Constantine Caramanis},
+ journal = {SIAM Review},
+ number = {3},
+ pages = {464-501},
+ publisher = {Society for Industrial and Applied Mathematics},
+ title = {Theory and Applications of Robust Optimization},
+ volume = {53},
+ year = {2011}
+}
+\end{verbatim}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Optimization Under Uncertainty}
+\begin{itemize}
+\item Solutions to optimization problems can exhibit remarkable sensitivity to perturbation sin the parameters of the problem thus often rendering a computed solution highly infeasible, suboptimal, or both (potentially worthless). \\
+
+\item Stochastic Optimization starts by assuming the uncertainty has a probabilistic description. \\
+
+\item Robust Optimization, is an approach to optimization under uncertainty in which the uncertainty model is not stochastic, but rahter deterministic and set-based. Instead of seeking to immunize the solution in some probabilistic sense to stochastic uncertainty, the decision maker constructs a solution that is feasible for any realization of the uncertainty in a given set. \\
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Robust Optimization}
+
+Robust Optimization can be studied from different perspectives:
+\begin{description}
+\item [Tractability] In general, the robust version of a tractable optimization problem may not itself be tractable. Many well-known classes of optimization problems, including LP, QCQP, SOCP, SDP and some discrete problems have a RO formulation that is tractable. Some care must be taken in the choice of the uncertainty set to ensure that tractability is preserved.
+\end{description}
+\end{frame}
+\begin{frame}{}
+\begin{description}
+\item [Conservativeness and Probability Guarantees] RO constructs solutions that are deterministically immune to realizations of the uncertain parameters in certain sets. This approach may be the only reasonable alternative when the parameter uncertainty is not stochastic, or if distributional information is not readily available. The tractability benefits of the Robust Optimization approach may make it more attracitive thatn alternative approaches from Stochastic Optimization. We might ask for probabilisitc guarantees for the robust solution that can be computed a priori, as a function of the structure and size of the uncertainty set.
+\end{description}
+\end{frame}
+
+\begin{frame}
+\begin{description}
+\item [Flexibility] There is a wide array of optimization classes, and also uncertainty sets.
+\end{description}
+
+\begin{block}{Tractability and Intractability}
+Problems are tractable if they can be reformulated into equivalent problems for which there are known solution algorithms with worst-case running time polynomial in a properly defined input size. Intractable means that existanece of such an algorithm for general instances of the problem would impy $P=NP$.
+\end{block}
+\end{frame}
+
+\section{Portfolio Optimization Example}
+
+\begin{frame}{Porfolio Optimization Example}
+\begin{block}{Problem}
+Allocate one unit of wealth among $n$ risky assets with random return $\tilde{r}$ and a risk-free asset (cash) with a known return $r_{f}$. The investor may not short-sell risky assets or borrow. His goal is to optimally trade-off between expected return and the probability that his portfolio loses money.
+\end{block}
+
+\begin{block}{Observation}
+Calculating a point on the pareto frontier is in general NP-hard even when the distribution of returns is discrete.
+\end{block}
+\end{frame}
+
+\begin{frame}{}
+The intractability of the stochastic problem arises because of the probability constraints on the loss:
+\begin{align*}
+\mathbb{P}(\tilde{r}^{'}x + r_{f}(1 - 1^{'}x) >= 1) >= 1 - p_{loss}
+\end{align*}
+\begin{description}
+\item [$x$] is the vector of allocations into the $n$ risky assets (the decision variables)
+\end{description}
+
+The robust formulation replace this probabilistic constraint with a deterministic constraint, requiring the return to be nonnegative for any realization of the reutrns in some given uncertainty set.
+\begin{align*}
+\tilde{r}^{'}x + r_{f}(1 - 1^{'}x) >= 1 \forall \tilde{r} \in \mathcal{R}
+\end{align*}
+\end{frame}
+
+\begin{frame}{}
+\begin{block}{Observation}
+The bigger the set $\mathcal{R}$ is, the lower the objective function (since there are more constraints to satisfy), and the smaller the loss probability $p_{loss}$. Central themes in robust optimization are understanding how to structure the uncertainty set $\mathcal{R}$ so that the resulting problem is tractable and favourably trades off expected return with loss probability $p_{loss}$.
+\end{block}
+
+Types of uncertainty sets (all defined with a parameter to control "size"), so that we can explore tradeoffs:
+\begin{description}
+\item[$\mathcal{R^Q}(\gamma) = {\tilde{r} : (\tilde{r} - \hat{r})'\sigma^{-1}(\tilde{r} - \hat{r}) <= \gamma^{2}}$] The set $\mathcal{R}^Q(\gamma)$ is a quadratic or ellipsoidal uncertainty set. It considers all returns within a radius of $\gamma$ from the mean return vector, where the ellipsoid is tilted by the covariance.   
+\item[$\mathcal{R^D}(\Gamma) = {\tilde{r} : \exists u \in \mathbb{R_{+}^{n}} : \tilde{r_i} = \hat{r_i} + (\underline{r}_i - \hat{r_i})u_i, u_i <= 1, \sum_{i=1}^{n}u_i <= \Gamma}$] The set $\mathcal{R}^D(\Gamma)$ considers all returns such that each component of the return is in the interval $[\underline{r}_i,\tilde{r}_i]$ with the restriction that the total weight of deviation from $\hat{r}_i$ summed across all assets, may be no more than $\Gamma$
+\item[$\mathcal{R^T}(\alpha) = {\tilde{r} : \exists q \in \mathbb{R_{+}^{N}} : \tilde{r} = \sum_{i=1}^{N}q_ir^i, 1'q = 1, q_i <= \frac{1}{N(1 - \alpha)}, i=1,\dots,N}$]
+\end{description}
+$\mathcal{R^T}(k)$ is the tail uncertainty set and considers the convex hull of all possible $N(1-\alpha)$ points averages of the N returns.
+\end{frame}
+
+\begin{frame}{}
+\begin{itemize}
+\item If $\gamma = 0$, $\Gamma = 0$ and $\alpha = 0$ the set is the singleton ${\hat{r}}$.
+\item If $\Gamma = N$ returns for in the range $[\underline{r}_i, \hat{r}^i]$ are considered, with the restriction that total weight of deviation from $\hat{r}_i$ summed across all assets, may be no more than $\Gamma$.
+\item If $\alpha = \frac{N-1}{N}$ this set is a convex hull of all N returns.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+Robust formulation - maximize expected return subject to feasibility and the robust constraint
+Stochastic formulation - minimize probability of loss subject to an expected return constraint as a stochastic program
+The stochastic model is designed for the nominal case, so it is supposed to outperform RO-based formulations
+The largest improvement offered by the stochastic formulation is around 2-3\% decrease in loss probability.
+In general solving the stochastic formualtion exactly is difficult (NP-hard).
+Total time to solve 8 instances is about 5.2 hours; by contrast solving 600 RO-based instances takes under 10 minutes.
+Stochastic formulation's solutions are the most sensitive of the bunch when affected by 1\% perturbation. Loss prabibility from the original model is as large as 5-6\%.
+At 2\% perturbations the SP solution are always outperformed by RO approaches.
+When noise is introduced, it does not appear that exact solutions confer much of an advantage and, in fact, may perform considerably worse.
+$\mathcal{R^Q}$ may be formulated as a second-order cone program (SCOP)
+$\mathcal{R^D} and \mathcal{R^T}$ models may be formulated as an LP
+The exact stochastic model is an NP-hard mixed integer program
+A separate issue is the ability of solution methods to cope with deviations in the underlying model. $\mathcal{R^D}$ aporoach focuses on the worst-case returns of a subset of the asset.
+$R^Q$ approach focuses on the first two moments of the returns.
+$R^T$ approach focuses on averages over the lower tail of the distribution.
+The example shows that RO is useful in dealing with errorneous or noise-corrupted data. We would expect models which are more robust will fare better in situations with new or altered data.
+RO is also more broadly used as a computationally viable way to handle uncertainty in models that are on their own difficult to solve.
+RO-based approaches may perform well and are not far from the optimal under nominal model. In addition they can be computed in orders magnitude faster that the exact solution.
+User needs to have some understanding of the structure of the uncertainty set in order to intelligenlty use RO techniques.
+Overall, RO provides a set of tools that may be useful in dealing with different types of uncertainty (model error or noisy data as well as complex, stochastic descriptions of uncertainty in an explicit model) - in a computationally manageable way.
+
+\end{frame}
+
+\section{Structure and Tractability Results}
+
+\begin{frame}{Robust Optimization}
+\begin{align}
+\label{eq:robust_optimization}
+& minimize~f_0(x) \\
+& subject~to~f_i(x,u_i) \leq 0, \forall u_i \in U_i, i = 1,\dots,m.
+\end{align}
+\begin{description}
+\item [$x \in \mathbb{R}^n$] a vector of decision variables
+\item [$f_0,f_i : \mathbb{R}^n \rightarrow \mathbb{R}$] are functions
+\item [$u_i \in \mathbb{R}^k$] are assumed to take arbitrary values in the uncertainty sets $\mathcal{U}_i \subseteq \mathbb{R}^k$
+\end{description}
+The goal of \ref{eq:robust_optimization} is to compute minimum cost solutions $x^*$ among thos solutions which are feasible for all realizations of the disturbances $u_i$ within $U_i$.
+Number of constraints can be infinite if some of the $U_i$ are continuous sets.
+\end{frame}
+
+\begin{frame}{}
+Straightforward facts about \ref{eq:robust_optimization}:
+\begin{itemize}
+\item The fact that objective function is unaffected by paramter unvertainty does not affect generality of the framework. We may introduce an auxiliary variable $t$ and reformulate the problem:
+\begin{align*}
+\begin{split}
+& minimize~t \\
+& subject~to \max_{u_0 \in U_0} f_0(x, u_0) \leq t
+\end{split}
+\end{align*}
+\item Uncertaity set $U$ has the form $U_1 \times \dots \times U_m$
+\item Constrants without uncertainty are captured in the framwork by assuming the corresponsing $U_i$ to be singletons
+\item Decision and disturbance vectors can contained in more general vector spaces than $\mathbb{R}^n$ or $\mathbb{R}^k$ 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+Robust Optimization is distincly different than sensitivity analysis, which is applied as post-optimization tool for quantifyin the change in cost of the associated optimal solution with small perturbations in the underlying problem data.
+In genral it is not clear when \label{eq:robust_optimization} is efficiently solvable. It is expected that adding robustness to a general optimization problem comes at the expense of significantly increased complexity. Robust conterpart to an arbitrary convex optimization problem in general is intractable. \\
+Much of literature has focused on specifyin classes of functions $f_{i}$ coupled with the types of uncertainty sets $U_i$, that yield tractable robust counterparts.\\
+If we define the robust feasible set to be:
+\begin{align}
+\label{eq:convex_set}
+X(U) = {x | f_i(x, u_i) \leq 0 \forall u_i \in U_i, i = 1,\dots,m}
+\end{align}
+Tractability is tantamount to \ref{eq:convex_set} being convex in x with an efficiently computable separation test.
+\end{frame}
+
+\begin{frame}{Robust Linear Optimization}
+\begin{align}
+\begin{split}
+\label{eq:robust_liear_programming}
+& minimize~c^{T}exact \\
+& subject~to~Ax \leq b, \forall a_1 \in U_1,\dots, a_m \in U_m
+\end{split}
+\end{align}
+\begin{description}
+\item [$a_i$] represents the $i$th row of the uncertain matrix $A$ and takes values in uncertainty set $a_i \in U_i$ if and only if $\max_{a_i \in U_i}a_i^Tx \leq b_i, \forall i$
+\item Robust LP is essentially always tractable for most pracitical unceratinty sets.
+\item In general the resulting robust problem may not be LP.
+\end{description}
+\end{frame}
+
+\begin{frame}{Ellipsoidal Uncertainty}
+Controlling the size of ellipsoidal sets has the interpretation of ta budget of uncertainty that the decision maker selects in order to easily trade off robustness and performance. 
+\begin{align*}
+U = U(\Pi,Q) = {\Pi(u) : \lvert Qu \rvert \leq \rho} 
+\end{align*}
+\begin{description}
+\item [$u \leftarrow \Pi(u)$] affinite embedding of $\mathbb{R}^L$ into $\mathbb{R}^{m \times n}$ and $Q \in \mathbb{R}^{M \times L}$
+\end{description}
+Then \ref{eq:robust_linear_programming} is equivalent to a second-order cone program.
+
+\begin{block}{Example}
+\begin{align*}\begin{split}
+& minimize~c^Tx \\
+& subject~to~a_ix \leq b_i, \forall a_i \in U_i, \forall i = 1,\dots,m
+\end{split}\end{align*}
+\begin{description}
+\item [$U = {(a_1,\dots,a_m) : a_i=a_i^0 + \triangle_i u_i, i=1,\dots,m, \lvert u \rvert_2 \leq \rho}$] uncertainty set
+\item [$a_i^0$] nominal value
+\end{description}
+
+Then the robust counterpart is:
+\begin{align*}
+\begin{split}
+& minimize~c^Tx \\
+& subject~to~a_i^0x \leq b_i - /rho \lvert /triangle_ix \rvert_2, /forall i=1,\dots,m
+\end{split}
+\end{align*}
+\end{block}
+\end{frame}
+
+\end{document}
