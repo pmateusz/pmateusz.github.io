@@ -1,4 +1,4 @@
-# Setup a Debian Machine :penguin:
+# Setup a Debian/Ubuntu Machine
 
 Instructions were tested on Debian 8.7 (jessie).
 
@@ -35,7 +35,7 @@ $ exit
 ```
 
 
-## Install Vritual Box Additions
+### Install Vritual Box Additions
 ```shell
 $ su -
 $ apt-get update
@@ -103,7 +103,7 @@ $ code --install-extension ajshort.latex-preview
 ### Install Latex
 ```shell
 $ su -
-$ apt-get isntall textlive-full
+$ apt-get install textlive-full
 $ exit
 ```
 
