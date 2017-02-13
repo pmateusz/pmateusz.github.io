@@ -58,14 +58,14 @@
 
 \title[Short title]{Convex Optimization} % The short title appears at the bottom of every slide, the full title is only on the title page
 
-\author{Mateusz Polnik}
-\institute[]
-{
-University of Strahclyde \\
-\medskip
-\textit{mateusz.polnik@strath.ac.uk}
-}
-\date{\today}
+%\author{Mateusz Polnik}
+%\institute[]
+%{
+%University of Strahclyde \\
+%\medskip
+%\textit{mateusz.polnik@strath.ac.uk}
+%}
+%\date{\today}
 
 \begin{document}
 
@@ -83,129 +83,259 @@ University of Strahclyde \\
 %----------------------------------------------------------------------------------------
 
 %------------------------------------------------
-\section{First Section} % Sections can be created in order to organize your presentation into discrete blocks, all sections and subsections are automatically printed in the table of contents as an overview of the talk
+\section{Introduction}
 %------------------------------------------------
 
-\subsection{Subsection Example} % A subsection can be created just before a set of slides with a common theme to further break down your presentation into chunks
+%---------------------------------%---------------------------------------------------------------
 
 \begin{frame}
-\frametitle{Paragraphs of Text}
-Sed iaculis dapibus gravida. Morbi sed tortor erat, nec interdum arcu. Sed id lorem lectus. Quisque viverra augue id sem ornare non aliquam nibh tristique. Aenean in ligula nisl. Nulla sed tellus ipsum. Donec vestibulum ligula non lorem vulputate fermentum accumsan neque mollis.\\~\\
-
-Sed diam enim, sagittis nec condimentum sit amet, ullamcorper sit amet libero. Aliquam vel dui orci, a porta odio. Nullam id suscipit ipsum. Aenean lobortis commodo sem, ut commodo leo gravida vitae. Pellentesque vehicula ante iaculis arcu pretium rutrum eget sit amet purus. Integer ornare nulla quis neque ultrices lobortis. Vestibulum ultrices tincidunt libero, quis commodo erat ullamcorper id.
+\frametitle{Optimization Problem}
+\begin{block}{Mathematical Optimization Problem}
+\begin{align}
+\begin{split}
+\label{eq:optimization_problem}
+&minimize~f_{0}(x) \\
+&subject~to~f_{i}(x) <= b_{i}, i = 1,\dots,m
+\end{split}
+\end{align}
+\end{block}
+\begin{description}
+\item [$x = (x_{1},\dots,x_{n})$] optimization variable
+\item [$f_{0} : R^{n} \rightarrow R$] objective function\item [$f_{i} : R^{n} \rightarrow R, i=1,\dots,m$] constraint functions
+\item [$b_{1},\dots,b_{n}$] limits or bounds
+\item [$x^{*}$] optimal solution of the problem \ref{eq:optimization_problem} if it has the smallest objective value among all vectors that satisfy contraints
+\end{description}
 \end{frame}
 
 %------------------------------------------------
 
 \begin{frame}
-\frametitle{Bullet Points}
+\frametitle{Linear and Nonlinear Program}
+\begin{block}{Linear Program}
+\begin{align}
+\label{eq:linear_problem_equality}
+f_{i}(\alpha x + \beta y) = \alpha f_{i}(x) + \beta f_{i}(y)
+\end{align}
+\end{block}
+The optimization problem \ref{eq:optimization_problem} is called a linear program if the objective and constraint functions $f_{0},\dots,f_{m}$ are linear (i.e. satisfy \ref{eq:linear_problem_equality}) for all $x, y \in R^{n}$ and all $\alpha, \beta \in R$.
+The optimization problem is not linear, it is called a nonlinear program.
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Convex Optimization Problem}
+\begin{block}{Convexity}
+\begin{align}
+\label{eq:convex_inequality}
+f_{i}(\alpha x + \beta y) <= \alpha f_{i}(x) + \beta f_{i}(y)
+\end{align}
+\end{block}
+The class of optimization problems \ref{eq:optimization_problem} that satisfies \ref{eq:convex_inequality} for all $x,y \in R^{n}$ and all $\alpha, \beta \in R$ with $\alpha + \beta = 1, \alpha >= 0, \beta => 0$ is called convex optimization problems. \\
+Any linear program is therefore a convex optimization problem.
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Applications}
+$-f_{0}(x)$ is often interpreted as utility
+\begin{description}
+\item [portfoli optimization] seek the best way to invest some capital in a set of $n$ assets. The variable $x_{i}$ represents the investment in the $i$th asset. Requirements are nonnegative investments and a minimum acceptable value of expected return for the whole portfolio. The objective function can be a measure of the overall risk or variance of the portfolio return.
+\item [device sizing] choose widht and lenght of each device in an electronic circuit. A common objective is the total power consumed by the circuit. Desing requirements are manufacturability, timing and area.
+\item [data fitting] find a model, from a family of potential models, that best fits some observed data and prior information. The objective function might be a measure of misfit or prediction error between observed data and the values predicted by the model, or a statistical measure of the unlikeness or implausibility of the parameter values.
+\end{description}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Solving Optimization Problems}
+Solution method for a class of optimization problems is an algorithm that computes a solution of the problem (to some given accuracy), given a particular problem from the class (i.e. an instance of the problem). \\
+A problem is sparce if each constraint function depends on only a small number of the variables.
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Least-squares Problems}
+A least-squares problem is an optimization problem with no constraints and an objective which is an objective which is a sum of squares of terms of the form $a_{i}^{T}x - b_{i}$:
+\begin{align}
+minimize~f_{0}=\Vert Ax - b \Vert_{2}^{2} = \sum^{k}_{i=1}(a^{T}_{i}x-b_{i})^{2}
+\end{align}
+\begin{description}
+\item [$A \in R ^{k \times n}$] with $k => n$
+\item [$a_{i}^{T}$] are rows of $A$
+\item [vector $x \in R^{n}$] is the optimization variable
+\end{description}
+Least-squares problem can be solved in a time approximately proportional to $n^{2}k$, with a known constant \\
+Recognizing that an optimization problem is least-squares problem is straightforward; we need to verify that the objective is a quadratic function and then test whether the associated quadratic function is positive semidefinite.
+
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Weighted Least-squares}
+\begin{block}{Weighted Least-squares}
+\begin{align}
+\sum^{k}_{i=1}w_{i}(a_{i}^{T}x - b_{i})^{2}
+\end{align}
+\end{block}
+\begin{description}
+\item [$w_{i}$] are positive
+\end{description}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Regularized Least-squares}
+\begin{block}{Least-squares with regularization}
+\begin{align}
+\label{eq:least_squares_problem}
+\sum^{k}_{i=1}(a_{i}^{T}x - b_{i})^{2} + \rho \sum_{i=1}^{n}x_{i}^{2}
+\end{align}
+\end{block}
+\begin{description}
+\item [$\rho > 0$]
+\end{description}
+The extra terms penalize large values of x.\\
+$\rho$ is chosen by user to give the right trade-off between making the original objective function $\sum^{k}_{i=1}(a_{i}^{T}x - b_{i})^{2}$ small, while keeping $\sum_{i=1}^{n}x^{2}_{i}$ not too big.
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Linear Programming}
+\begin{block}{Linear Programming}
+\begin{align}
+\begin{split}
+&minimize~c^{T}x \\
+&subject~to~a_{i}^{T}x <= b_{i}, i = 1,\dots,m
+\end{split}
+\end{align}
+\end{block}
+\begin{description}
+\item [$c,a_{1},\dots,a_{m} \in R^{n}$] are vectors
+\item [$b_{1},\dots,b_{m} \in R$] are scalars
+\end{description}
+There is no simple analytical formula for the solution of a linear program.
+The linear program can be solved effectively using Dantzig's simplex method. While we cannot give the exact number of arithmetic operations required to solve a linear program, we can establish rigorous bounds on the number of operations required to solve a linear program to a given accuracy, using an interior-point method. \\
+The complexity in practice is $n^{2}m$
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}
+\frametitle{Chebyshev Approximation Problem}
+\begin{align}
+minimize~max_{i=1,\dots,k} |a_{i}^{T}x - b_{i}|
+\end{align}
+\begin{description}
+\item [$x \in R^{n}$] is the variable
+\item [$a_{1},\dots,a_{k} \in R^{n}, b_{1},\dots,b_{k} \in R$] are parameters 
+\end{description}
+Note the resemblance to the least-squares problem \ref{eq:least_squares_problem}:
 \begin{itemize}
-\item Lorem ipsum dolor sit amet, consectetur adipiscing elit
-\item Aliquam blandit faucibus nisi, sit amet dapibus enim tempus eu
-\item Nulla commodo, erat quis gravida posuere, elit lacus lobortis est, quis porttitor odio mauris at libero
-\item Nam cursus est eget velit posuere pellentesque
-\item Vestibulum faucibus velit a augue condimentum quis convallis nulla gravida
+\item The objective is a measure of size of the terms $a_i^T - b_i$. In least-squares we use the sum of squares of the terms as objective, whereas in Chebyshev approximation, we use the maximum of the absolute values.
+\item Important distinction is that the objective function in the Chebyshev appproximation problem is not differentiable, the objective in the least-squares problem is differentiable
 \end{itemize}
 \end{frame}
 
-%------------------------------------------------
+\begin{frame}{}
+The Chebyshev aporoximation problem can be solved by solving the linear program:
 
-\begin{frame}
-\frametitle{Blocks of Highlighted Text}
-\begin{block}{Block 1}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer lectus nisl, ultricies in feugiat rutrum, porttitor sit amet augue. Aliquam ut tortor mauris. Sed volutpat ante purus, quis accumsan dolor.
-\end{block}
-
-\begin{block}{Block 2}
-Pellentesque sed tellus purus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Vestibulum quis magna at risus dictum tempor eu vitae velit.
-\end{block}
-
-\begin{block}{Block 3}
-Suspendisse tincidunt sagittis gravida. Curabitur condimentum, enim sed venenatis rutrum, ipsum neque consectetur orci, sed blandit justo nisi ac lacus.
-\end{block}
+\begin{align}
+\begin{split}
+minimize~t \\
+subject~to~ a_i^Tx-t <= b_i, i=1,\dots,k \\
+-a_i^Tx - t <= -b_i, i=1,\dots,k
+\end{split}
+\end{align}
+\begin{description}
+\item [$x \in R^n, t \in R$] variables
+\end{description}
 \end{frame}
 
 %------------------------------------------------
 
-\begin{frame}
-\frametitle{Multiple Columns}
-\begin{columns}[c] % The "c" option specifies centered vertical alignment while the "t" option is used for top vertical alignment
-
-\column{.45\textwidth} % Left column and width
-\textbf{Heading}
-\begin{enumerate}
-\item Statement
-\item Explanation
-\item Example
-\end{enumerate}
-
-\column{.5\textwidth} % Right column and width
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer lectus nisl, ultricies in feugiat rutrum, porttitor sit amet augue. Aliquam ut tortor mauris. Sed volutpat ante purus, quis accumsan dolor.
-
-\end{columns}
-\end{frame}
-
-%------------------------------------------------
-\section{Second Section}
-%------------------------------------------------
-
-\begin{frame}
-\frametitle{Table}
-\begin{table}
-\begin{tabular}{l l l}
-\toprule
-\textbf{Treatments} & \textbf{Response 1} & \textbf{Response 2}\\
-\midrule
-Treatment 1 & 0.0003262 & 0.562 \\
-Treatment 2 & 0.0015681 & 0.910 \\
-Treatment 3 & 0.0009271 & 0.296 \\
-\bottomrule
-\end{tabular}
-\caption{Table caption}
-\end{table}
+\begin{frame}{Convex Optimization}
+\begin{align}
+\begin{split}
+\label{convex_optimization_problem}
+minimize~f_{0}(x) \\
+subject~to~f_i(x)<=b_i, i=1,\dots,m
+\end{split}
+\end{align}
+\begin{description}
+\item [$f_0,\dots,f_m: R^n \rightarrow R$] are convex, i.e. satisfy $f_i(\alpha x + \beta y) <= \alpha f_i(x) + \beta f_i(y)$ for all $x, y \in R^n$
+\item [$\alpha, \beta \in R$ with $\alpha + \beta = 1$, $\alpha >= 0, \beta => 0$]
+\end{description}
+The least-squares problem and linear programming problem are both special cases of the general convex optimization problem.
 \end{frame}
 
 %------------------------------------------------
 
-\begin{frame}
-\frametitle{Theorem}
-\begin{theorem}[Mass--energy equivalence]
-$E = mc^2$
-\end{theorem}
+\begin{frame}{}
+In general there is no analytical formula for the solution of convex optimization problems.
+Interior-point methods work very well in practice, and in some cases can be proved to solve the problem to a specified accuracy witha number of operations that does not exceed a polynomial of the problem dimensions.
+Interior-point methods can solve the problem \ref{convex_optimization_problem} in a number of steps or iterations that is almost always in the range between 10 and 100.
+Ignoring any structure in the problem, each step requires on the order of $max{n^3,n^2m,F}$ operations, where F is the cost of evaluating the first and second derivatives of the objective and constraint functions $f_0,\dots,f_m$.
 \end{frame}
 
 %------------------------------------------------
 
-\begin{frame}[fragile] % Need to use the fragile option when verbatim is used in the slide
-\frametitle{Verbatim}
-\begin{example}[Theorem Slide Code]
-\begin{verbatim}
-\begin{frame}
-\frametitle{Theorem}
-\begin{theorem}[Mass--energy equivalence]
-$E = mc^2$
-\end{theorem}
-\end{frame}\end{verbatim}
-\end{example}
+\begin{frame}{Nonlinear optimization}
+Nonlinear optimization (or nonlinear programming) is an optimization problem when the objective or constraint functions are not linear, but not known to be convex.
+There are no effective methods for solving the general nonlinear programming problem.
+Methods for the general nonlinear programming problem therefore take several differnet approaches, each of which involves some compromise.
 \end{frame}
 
 %------------------------------------------------
 
-\begin{frame}
-\frametitle{Figure}
-Uncomment the code on this slide to include your own image from the same directory as the template .TeX file.
-%\begin{figure}
-%\includegraphics[width=0.8\linewidth]{test}
-%\end{figure}
+\begin{frame}{Local Optimization}
+In the local optimization, the compromise is to give up seeking the optimial $x$, which minimizes the objective function over all feasible points. Instead we seek a point that is only locally optimal, which means that it minimizes the objective function among feasible points that are near to it.
+Local optimizations methods can be fast, can handle large-scale problems, and are widely applicable, since they only reqiure differentiability of the objective function and constraint functions.
+There are several disadvantages of local optimization methods:
+\begin{itemize}
+\item not finding the globally optimal solution
+\item requiring an initiall guess for the optimization variable. The initial guess is critical and can greatly affect the objective value of the local solution obtained.
+\item little information is provided about how far from globally optimal the local solution is
+\item local optimization are often sensitive to algorithm parameter values
+\item art rather than a technology, it involves experiment with the choice of algorithm, adjusting algorithm paramters, and finding a good initial guess or a method for producing a good enough initial guess
+\end{itemize}
+In convex optimization these are reversed. The art and challenge is in problem formulation; once a problem is formulated as a convex optimizatoin problem, it is relatively straightforward to solve it.
 \end{frame}
 
 %------------------------------------------------
 
-\begin{frame}[fragile] % Need to use the fragile option when verbatim is used in the slide
-\frametitle{Citation}
-An example of the \verb|\cite| command to cite within the presentation:\\~
+\begin{frame}{}
+In global optimization the true global solution of the optimization problem is found; the compromise is efficiency. The worst-case complexity of global optimization methods grows expotentially with the problem sizes. The hope is that in practice, for the particular problem instances encoutered, the moded is far faster.
+Global optimization is used:
+\begin{itemize}
+\item for problems with a small number of variables
+\item where computing time is not critical
+\item the value of finding the true global solution is highly critical (i.e. worst-case analysis, verification of a high value or safety-critical systems).
+\end{itemize}
+If a local optimization methods finds parameter values that yield unacceptable performace, it has succeeded in determining that the system is not reliable. But a local optimization cannot certify that a system is reliable. A global optimization method, in contrast, will find the absolute worst case values of the parameters, and if the associated performance is acceptable, can cerify the system as safe.
+\end{frame}
 
-This statement requires citation \cite{p1}.
+%------------------------------------------------
+
+\begin{frame}{Role of Convex Optimization in Nonconvex Problems}
+\begin{description}
+\item [initialization for local optimization] combine local optimization with a local optimization method. Starting with a nonconvex problem, find an approximate, but convex, formulation of the problem. By solving this approximate problem, which can be done easily and without an initial guess, we obtain the exact solution to the approximate convex problem. This point is then used as the startin gpoint for a local optimization method, applied to the original nonconvex problem.
+\item [convex heuristics for nonconvex optimization]
+randomized algorithms in which an approximate solution to a nonconvex problem is found by drawing some number of candidates from a probability distribution, and taking the best one found as approximate solution. Now suppose the family of distributions from which we will draw the candidates is parameterized by its mean and covariance. Which of these distributions gives us the smallest expected vlue of the objective? This problem is sometimes a convex problem.
+\item [bounds for global optimization] many methods for global optimization require a cheaply computable lower bound on the optimal value of the nonconvex problem. In relaxation each nonconvex constraint is replaced by with a looser, but convex constraint. In Lagrangian relaxation the Lagrangian dual problem is solved. The problem is convex, and provides a lower bound on the optimal value of the nonconvex problem.
+\end{description}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Research}
+Much of research focuses on proving that an interior-point can solve some class of convex optimization problem siwth a number of operations that grows no faster than a polynomial of the problem dimensions and $log(1/\epsilon)$, where $\epsilon > 0$ is the required accuracy.
 \end{frame}
 
 %------------------------------------------------
@@ -213,10 +343,10 @@ This statement requires citation \cite{p1}.
 \begin{frame}
 \frametitle{References}
 \footnotesize{
-\begin{thebibliography}{99} % Beamer does not support BibTeX so references must be inserted manually as below
-\bibitem[Smith, 2012]{p1} John Smith (2012)
-\newblock Title of the publication
-\newblock \emph{Journal Name} 12(3), 45 -- 678.
+\begin{thebibliography}{99}
+\bibitem[Boyd, 2012]{convex_optimization} Stephen Boyd, Lieven Vandenberghe (2004)
+\newblock Convex Optimization
+\newblock \emph{Cambridge University Press}
 \end{thebibliography}
 }
 \end{frame}
