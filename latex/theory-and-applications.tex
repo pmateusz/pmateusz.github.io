@@ -822,15 +822,139 @@ If the second network topology is totally ordered, then the separation problem b
 \end{frame}
 
 \begin{frame}{Uncertainty Models for Return Mean and Covariance}
+Canonical Problem:
+Allocate wealth across $n$ risky assets with mean returns $\mu \in \mathbb{R}^n$ and return canonical problem is to allocate wealth across $n$ risky assets with mean returns $\mu \in \mathbb{R}^n$ and return covariance matrix $\sigma \in \mathbb{S}^{n}_{++}$ over a vector $w \in \mathbb{R}^n$.
+
+Minimum variance problem:
+\begin{align}
+\label{eq:minimum_variance_problem}
+\min \{w^T\sigma w : \mu^Tw \geq r, w \in \mathcal{W}\}
+\end{align}
+
+Maximum return problem:
+\begin{align}
+\label{eq:maximum_return_problem}
+\max \{\mu^Tw : w^T\sigma w \leq \sigma^{2}, w \in \mathcal{W}\}
+\end{align}
+
+\begin{description}
+\item [$r$ and $\sigma$] investor-specific constants
+\item [$\mathcal{W}$] set of acceptable weight vectors ($\mathcal{W}$ typically contains the normalization constraint $e^{T}w = 1$ and often no short-sales constraint $w_{i} \geq 0, i=1,\dots,n$)
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+$\mu$ and $\Sigma$ are rarely known with a complete precision.
+Box, ellipsoidal and other uncertainty sets have been proposed for $\mu$ and $\Sigma$
+\begin{align*}
+\mathcal{M} = \{\mu \in \mathbb{R}^{n} | \underline{\mu}_{i} \leq \mu \leq \overline{\mu}_{i}, i = 1,\dots,m\} \\
+\mathcal{S} = \{\Sigma \in \mathbb{S}_{+}^{n} | \underline{\Sigma}_{ij} \leq \Sigma_{ij} \leq \overline{\Sigma}{ij}, i=1,\dots,n, j=1,\dots,n\}
+\end{align*}
+With these uncertainty structures, they provide a polynomial-time cutting plane algorithm for solving robust variants of problems \ref{minimum_variance_problem} and \ref{eq:maximum_return_problem}.
 \end{frame}
 
 \begin{frame}{Distribution-free Model for near-arbitrage opportunities}
+Constraints for arbitrage opportunity:
+\begin{description}
+\item [$\mu^{T}w \geq 0$]
+\item  [$w^{T}\Sigma w = 0$]
+\item [$e^{T} w \leq = 0$]
+\end{description}
+
+Pure arbitrage cannot exist, instead, the authors seek robust profit opportunities at level $\theta$:
+\begin{align*}
+\mu^{T} - \theta\sqrt{w^T\Sigma w} \geq 0~and~e^T < 0
+\end{align*}
+
+Maximum-$\theta$ robust profit opportunity problem
+\begin{align}
+\label{eq:maximum_robust_profit_opportunity}
+\sup_{\theta,\omega} \{ \theta: \mu^{T}\omega - \theta\sqrt{\omega^{T}\Sigma \omega} \geq 0, e^{t}\ \}
+\end{align}
+
+\ref{eq:maximum_robust_profit_opportunity} is equivalent to a convex quadratic optimization problem.
+
+\begin{align}
+\label{eq:min_random_return}
+\min_{R \sim (\mu,\Sigma)} \mathbb{E}_{R} [u(x'R)]
+\end{align}
+\begin{description}
+\item [$R$] random return
+\item [$\mu$] mean
+\item [$\Sigma$] covariance
+\item [$u$] utility function
+\end{description}
+The problem \ref{eq:min_random_return} reduces to a three-point problem.
+\end{frame}
+
+\begin{frame}{}
+\begin{itemize}
+\item Robust approach greatly outperforms a stochastic programming approach based on scenarios. The robust has a much lower observed frequency of losses, always a lower standard deviation of returns, and, in most cases, a higher return.
+\item On the real market data, the robust porfolios did not always outperform the classical approach, but, for high values of the confidence parameter (i.e. larger uncertainty sets), the robust portfolios had superior performance.
+\item Robust portfolios significantly outperform nominal portfolios in terms of worst-case value-at-risk.
+\item The robust portfolios offer significant improvement in worst-case return versus nominal portfolios at the expence of a much smaller cost in expected return.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Robust Optimization and Regularization}
+$\mathcal{l}^{2}$-regularized regression problem, is the solution to a robust optimization problem
+\begin{align*}
+\min \lVert Ax - b \rVert + \rho\sqrt{\lVert x \rVert^{2}_{2} + 1}
+\end{align*}
+
+\begin{align*}
+\min_{x} \max_{\lVert \triangle A \triangle b \rVert_{F \leq \rho}} \lVert (A + \triangle A)x - (b + \triangle b)\rVert
+\end{align*}
+\begin{description}
+\item [$\lVert \cdot \rVert_{F}$] the Frobenius norm of a matrix $\lVert A \rVert_{F} = \sqrt{Tr(A^{T}A)}$
+\end{description}
 \end{frame}
 
-\begin{frame}{Fisher Discriminant Analysis}
+\begin{frame}{Lasso Regression}
+$\mathcal{l}^{1}$-regularized regression:
+\begin{align*}
+\min \lVert Ax - b \rVert_{2} + \lambda \lVert x \rVert_{1}
+\end{align*}
+Robust problem:
+\begin{align*}
+\min_{x} \max_{\lVert \triangle A \rVert_{\infty,2 \leq \rho}} \lVert (A + \triangle A)x - b\rVert
+\end{align*}
+\end{frame}
+
+\begin{frame}{Binary Classification}
+Binary Classification Problem
+Collection of data vectors associated with two calsses, x and y, with elements of both classes belonging to $\mathbb{R}^{n}$. The data for the two classes have empirical means and covariances
+($\mu_{x}$,$\Sigma_{x}$) and ($\mu_{x}$,$\Sigma_{y}$). We wish to find a linear decision rule for deciding, to which class future observations belong. In other words, we wish to find a hyperplane $\mathcal{H}(a,b) = \{z \in \mathbb{R}^{n} | a^{T}\ = b\}$, with future classification son new data $z$ depending on the sign of $a^{T}z - b$ such that misclassification probability is as low as possible.
+
+Minimax Probability Machine (MPM) finds a separating hyperplane (a,b) to the problem
+
+\begin{align*}
+\max \{\alpha : \inf_{x \sim (\mu_{x}, \Sigma_{x}) }
+\mathbb{P}(a^{T}x \geq b) \geq \alpha,
+\inf_{y \sim (\mu_{x}, \Sigma_{x})} \mathbb{P}(a^{T} \leq b) \geq \alpha \}
+\end{align*}
+
+Uncertainty sets:
+\begin{align*}
+\mathcal{X} = \{(\mu_{x}, \Sigma_{x}) |(\mu_{x} - \mu_{x}^{0})\Sigma^{-1}_{x}(\mu_{x} - \mu_{x}^{0}) \leq \nu^{2}, \lVert \Sigma_{x} \Sigma_{x}^{0} \rVert_{F} \leq \rho\} \\
+\mathcal{Y} = \{(\mu_{y}, \Sigma_{y}) |(\mu_{y} - \mu_{y}^{0})\Sigma^{-1}_{y}(\mu_{y} - \mu_{y}^{0}) \leq \nu^{2}, \lVert \Sigma_{y} \Sigma_{y}^{0} \rVert_{F} \leq \rho\}
+\end{align*}
+
+\end{frame}
+
+\begin{frame}{Fisher discriminant analysis (FDA)}
+For random variables belonging to class $x$ and $y$, and a separating hyperplane a, this approach attepmts to maximize the Fisher discriminant ration:
+\begin{align*}
+f(a, \mu_{x}, \mu_{y}, \Sigma_{x}, \Sigma_{y}) := \frac{(\mu_{x} - \mu_{y})^{2}}{a^{T}(\Sigma_{x} + \Sigma_{y})a}
+\end{align*}
+
+Robust Fisher linear discriminant:
+\begin{align*}
+\max_{a \neq 0} min_{(\mu_{x}, \mu_{y}, \Sigma_{x}, \Sigma_{y}) \in \mathcal{U}} f(a, \mu_{x}, \mu_{y}, \Sigma_{x}, \Sigma_{y})
+\end{align*}
+\begin{description}
+\item [$\mathcal{U}$] convex uncertainty set for the mean and covariance
+\end{description}
 \end{frame}
 
 \end{document}
