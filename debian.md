@@ -123,6 +123,11 @@ $ make cc pyhon
 $ make test_python
 ```
 
+### Switch Git origin to SSH access
+```
+$ git remote set-url origin git@github.com:pmateusz/or-tools.git
+```
+
 # Useful commands
 
 | Command | Example |
