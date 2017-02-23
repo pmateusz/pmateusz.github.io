@@ -98,6 +98,8 @@ $ code --install-extension donjayamanne.python
 $ code --install-extension ms-vscode.latex
 $ code --install-extension mathiasfrohlich.latexcompile
 $ code --install-extension ajshort.latex-preview
+$ code --install-extension alefragnani.Bookmarks
+$ code --install-extension ms-vscode.cpptools
 ```
 
 ### Install Latex
@@ -144,3 +146,125 @@ $ git remote set-url origin git@github.com:pmateusz/or-tools.git
 | domainname | `domainname` |
 | echo | `echo "$SSH_AUTH_SOCK"` |
 | ssh | `ssh -T git@github.com` |
+
+# Torque Resource Manager
+This section will guide you through the process of installation and configuration of the Torque Server.
+The installation will be 
+Instructions below were executed on Debian Jessie. If you switch to a different distribution the package names may change, as well as instruction how to manage services.
+
+[Torque 6.1.0](http://wpfilebase.s3.amazonaws.com/torque/torque-6.1.0.tar.gz)
+
+## Dependencies 
+
+Install required dependency packages.
+
+| Package Name     | Dependency  |
+| ---------------- | ----------  |
+| chkconfig        | Runtime     |
+| libxml2-dev      | Runtime     |
+| libssl-dev       | Runtime     |
+| openssl          | Runtime     |
+| tcl-dev          | Runtime     |
+| tk-dev           | Runtime     |
+| tcllib           | Runtime     |
+| tclx             | Runtime     |
+| hwloc            | Runtime     |
+| cgroup-bin       | Runtime     |
+| cgroup-tools     | Runtime     |
+| cpuset           | Runtime     |
+| libboost-all-dev | Runtime     |
+| gcc              | Compilation |
+| g++              | Compilation |
+| libtool          | Compilation |
+| make             | Compilation |
+
+## Configuration
+
+Review [Customizing the Install](http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/1-installConfig/customizingTheInstall.htm%3FTocPath%3D2%2520Installation%2520and%2520Configuration%7CAdvanced%2520Configuration%7C_____1) for the complete list of supported configuration options.
+
+In the following commands you are supposed to specify the installation directory of the hwloc and tcl packages. These directories can be found using the following command.
+```
+$ dpkg -L tcl-dev
+```
+
+```
+$ wget http://wpfilebase.s3.amazonaws.com/torque/torque-6.1.0.tar.gz
+$ tar -xvzf torque-6.1.0.tar.gz
+$ cd torque-6.1.0
+$ ./configure --enable-cgroups --enable-fast-install --enable-gcc-warnings --enable-gui --enable-shared --enable-static --enable-syslog --with-scp --with-hwloc-path=/usr/bin  --with-tcl=/usr/lib
+$ make
+$ make install
+$ make packages
+```
+
+# Configure Server
+
+During default server configuration I came across the following error, which based on the number of Google answers is a common problem.
+Solution provided below is the one that worked for me.
+
+```
+$# ./torque.setup root
+Currently no servers active. Default server will be listed as active server. Error  15133
+Active server name: gwb17102  pbs_server port is: 15001
+trqauthd daemonized - port /tmp/trqauthd-unix
+trqauthd successfully started
+initializing TORQUE (admin: root@gwb17102)
+
+You have selected to start pbs_server in create mode.
+If the server database exists it will be overwritten.
+do you wish to continue y/(n)?Y
+root     31179     1  0 14:23 ?        00:00:00 pbs_server -t create
+Max open servers: 9
+qmgr obj= svr=default: Bad ACL entry in host list MSG=First bad host: gwb17102
+ERROR: cannot set TORQUE admins
+$ 
+```
+
+### Set TORQUE_HOME environment variable
+Set `TORQUE_HOME` environment variable in `/etc/profile.d/torque.sh`.
+
+### Register trqauthd as service
+```
+cd <installation-directory>
+cp contrib/init.d/trqauthd /etc/init.d
+chkconfig --add trqauthd
+```
+
+Ensure `/etc/ld.so.conf.d/torque.conf` `contains /usr/local/lib`
+```
+tail /etc/ld.so.conf.d/torque.conf
+```
+
+### Register pbs_server as service
+```
+$ cp /usr/local/sbin/pbs_server /etc/init.d/
+$ chkconfig --add pbs_server
+```
+
+### Execute torque.config with both username and domain arguments
+```
+$ cd <installation-directory>
+$ domainname
+$ ./torque.setup root *.ds
+```
+
+Ensure that the default server parameters suit your needs.
+
+```
+$ qmgr -c 'p s'
+```
+
+Specific options can be changed in the following way.
+
+```
+$ qmgr -c "set server scheduling=true"
+$ qmgr -c "create queue batch queue_type=execution"
+$ qmgr -c "set queue batch started=true"
+$ qmgr -c "set queue batch enabled=tr
+$ qmtr
+$ > set queue batch enabled=tr
+$ > quit
+$
+```
+
+# TODO: Write how to change root password. How root account is done in Linux.
