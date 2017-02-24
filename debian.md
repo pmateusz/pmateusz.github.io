@@ -267,4 +267,12 @@ $ > quit
 $
 ```
 
+## Get details of hardware resources available on the server
+| Command    | Comment                                  |
+|------------|------------------------------------------|
+| `free -mt` | List available memory in MB              |
+| `vmstat`   | List available info about CPU and memory |
+| `nproc`    | List number of processors                |
+| `lscpu`    | List detailed info about CPU             |
+
 # TODO: Write how to change root password. How root account is done in Linux.
