@@ -35,7 +35,7 @@ $ exit
 ```
 
 
-### Install Vritual Box Additions
+### Install Virtual Box Additions
 ```shell
 $ su -
 $ apt-get update
@@ -100,6 +100,7 @@ $ code --install-extension mathiasfrohlich.latexcompile
 $ code --install-extension ajshort.latex-preview
 $ code --install-extension alefragnani.Bookmarks
 $ code --install-extension ms-vscode.cpptools
+$ code --install-extension vector-of-bool.vscode-cmake-tools
 ```
 
 ### Install Latex
