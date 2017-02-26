@@ -5,7 +5,8 @@ for $extension in donjayamanne.python \
     ajshort.latex-preview \
     alefragnani.Bookmarks \
     ms-vscode.cpptools \
-    vector-of-bool.vscode-cmake-tools
+    vector-of-bool.vscode-cmake-tools \
+    twxs.cmake
 do
     code --install-extension $extension
 done
