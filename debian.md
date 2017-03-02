@@ -284,5 +284,15 @@ $
 ssh-copy-id user@hostname.domain
 ```
 
+## Add to the sudoers group
+```shell
+$ sudo adduser <username> sudo
+```
+
+
+## List size of paritions
+```shell
+$ lsblk
+```
 
 # TODO: Write how to change root password. How root account is done in Linux.
