@@ -295,4 +295,9 @@ $ sudo adduser <username> sudo
 $ lsblk
 ```
 
+## Check the location of the symbolic link
+```
+readlink -f <link-file>
+```
+
 # TODO: Write how to change root password. How root account is done in Linux.
