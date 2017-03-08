@@ -159,25 +159,36 @@ Instructions below were executed on Debian Jessie. If you switch to a different 
 
 Install required dependency packages.
 
-| Package Name     | Dependency  |
-| ---------------- | ----------  |
-| chkconfig        | Runtime     |
-| libxml2-dev      | Runtime     |
-| libssl-dev       | Runtime     |
-| openssl          | Runtime     |
-| tcl-dev          | Runtime     |
-| tk-dev           | Runtime     |
-| tcllib           | Runtime     |
-| tclx             | Runtime     |
-| hwloc            | Runtime     |
-| cgroup-bin       | Runtime     |
-| cgroup-tools     | Runtime     |
-| cpuset           | Runtime     |
-| libboost-all-dev | Runtime     |
-| gcc              | Compilation |
-| g++              | Compilation |
-| libtool          | Compilation |
-| make             | Compilation |
+| Package Name     | Ubuntu Name            | Dependency  |
+| ---------------- | ---------------------- | ----------- |
+| chkconfig        | sysv-rc-conf           | Runtime     |
+| libxml2-dev      |                        | Runtime     |
+| libssl-dev       |                        | Runtime     |
+| openssl          |                        | Runtime     |
+| tcl-dev          |                        | Runtime     |
+| tk-dev           |                        | Runtime     |
+| tcllib           |                        | Runtime     |
+| tclx             |                        | Runtime     |
+| hwloc            |                        | Runtime     |
+| cgroup-bin       |                        | Runtime     |
+| cgroup-tools     | cgroup-lite libcgroup1 | Runtime     |
+| cpuset           |                        | Runtime     |
+| libboost-all-dev |                        | Runtime     |
+| gcc              |                        | Compilation |
+| g++              |                        | Compilation |
+| libtool          |                        | Compilation |
+| make             |                        | Compilation |
+
+```shell
+# Ubuntu command for trusty
+$ sudo apt-get install gcc g++ libtool make
+```
+
+```shell
+# Ubuntu command for trusty
+$ sudo apt-get install libxml2-dev libssl-dev openssl tcl-dev tk-dev tcllib tclx hwloc cgroup-bin cpuset libboost-all-dev cgroup-lite libcgroup1 sysv-rc-conf
+```
+
 
 ## Configuration
 
@@ -282,6 +293,38 @@ $
 ## Log without a password
 ```
 ssh-copy-id user@hostname.domain
+```
+
+# Configure Apache Server
+Logs are stored in `/var/log/apache2`
+Edit configuration `sudo vim /etc/apache2/apache2.conf`
+Reboot `sudo /etc/init.d/apache2 restart`
+
+### index.html
+```
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta http-equiv="refresh" content="0; url=./debs/amd64" />
+  <body>
+  </body>
+</html>
+
+```
+
+### /etc/apache2/apache2.conf
+```
+<Directory /var/www/debs/amd64>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+</Directory>
+
+```
+
+```
+ln -s ../debs debs
 ```
 
 ## Add to the sudoers group
