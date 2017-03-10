@@ -272,8 +272,10 @@ Specific options can be changed in the following way.
 $ qmgr -c "set server scheduling=true"
 $ qmgr -c "create queue batch queue_type=execution"
 $ qmgr -c "set queue batch started=true"
-$ qmgr -c "set queue batch enabled=tr
-$ qmtr
+$ qmgr -c "set server auto_node_np=true"
+$ qmgr -c "set queue batch enabled=true"
+$ qmgr -c "set server default_queue=batch"
+$ qmgr
 $ > set queue batch enabled=tr
 $ > quit
 $
@@ -312,7 +314,8 @@ Reboot `sudo /etc/init.d/apache2 restart`
 </html>
 
 ```
-
+update-rc.d <service name> defaults
+update-rc.d <service name> enable
 ### /etc/apache2/apache2.conf
 ```
 <Directory /var/www/debs/amd64>
@@ -343,4 +346,52 @@ $ lsblk
 readlink -f <link-file>
 ```
 
+## Change hostname
+sudo vim /etc/hostname
+sudo vim /etc/hosts
+
 # TODO: Write how to change root password. How root account is done in Linux.
+
+## Check status of services
+service --status-all
+
+# Add node
+sudo vim /var/spool/torque/server_priv/nodes
+
+Create the service file in /etc/init.d/<service name>
+chmod 755 /etc/init.d/<service name>
+update-rc.d <service name> defaults
+update-rc.d <service name> enable
+
+tail -f <file_name>
+
+pbsnodes -a 
+
+qnodes
+momctl -d 3 -h node01
+unlink
+
+TORQUE_HOME/mom_priv/config:
+$pbsserver      headnode          # note: hostname running pbs_server
+$logevent       255               # bitmap of which events to log
+
+
+http://etutorials.org/Linux+systems/cluster+computing+with+linux/Part+III+Managing+Clusters/Chapter+17+PBS+Portable+Batch+System/17.6+Troubleshooting/
+
+Important webpages:
+http://stackoverflow.com/questions/1663953/get-the-domain-name-in-linux-c-programming
+http://ubuntuhandbook.org/index.php/2014/04/change-hostname-ubuntu1404/
+http://spaceart.wikispaces.com/CCDS
+https://cmayes.wordpress.com/2012/12/15/single-host-torque-pbs/
+http://docs.adaptivecomputing.com/torque/3-0-5/11.1troubleshooting.php
+https://www.webmo.net/support/pbs_init
+http://www.supercluster.org/pipermail/torqueusers/2014-October/017606.html
+http://forum.pbsworks.com/index.php?/topic/150-get-list-of-queue-on-which-a-user-can-qsub/
+https://www.google.co.uk/search?q=ubuntu+pbs_server+daemon+not+found&oq=ubuntu+pbs_server+daemon+not+found&aqs=chrome..69i57.7344j0j7&sourceid=chrome&ie=UTF-8
+http://docs.adaptivecomputing.com/torque/4-1-7/Content/topics/11-troubleshooting/faq.htm
+http://docs.adaptivecomputing.com/torque/4-2-7/Content/topics/12-appendices/torqueQuickStartGuide.htm
+http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/1-installConfig/specifyComputeNodes.htm%3FTocPath%3D2%2520Installation%2520and%2520Configuration%7CInitializing%252FConfiguring%2520Torque%2520on%2520the%2520Server%2520(pbs_server)%7C_____1
+http://docs.adaptivecomputing.com/torque/3-0-5/a.ltorquequickstart.php
+http://askubuntu.com/questions/299371/correct-way-to-install-a-custom-upstart-service
+http://askubuntu.com/questions/86822/how-can-i-copy-the-contents-of-a-folder-to-another-folder-in-a-different-directo
+https://jabriffa.wordpress.com/2015/02/11/installing-torquepbs-job-scheduler-on-ubuntu-14-04-lts/
