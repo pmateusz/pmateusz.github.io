@@ -10,7 +10,9 @@ Although author uses the Virtual Box as a virtual machine provider, the scripts 
 
 ## Setup for Windows
 
-Download and install [Virtual Box]https://www.virtualbox.org/wiki/Downloads(), [Vagrant](https://www.vagrantup.com/downloads.html) and [Git](https://git-scm.com/download/win). During Git installation select the option *"Use Git and optional Unix tools from the Windows Command Prompt"*.
+Download and install [Virtual Box](https://www.virtualbox.org/wiki/Downloads), [Vagrant](https://www.vagrantup.com/downloads.html) and [Git](https://git-scm.com/download/win). During Git installation select the option *"Use Git and optional Unix tools from the Windows Command Prompt"*.
+
+![alt tag](./git-installation-adjusting-path.png)
 
 This option will configure the installer to install [MinGW64 environment](http://www.mingw.org/) along with several command line utilities available in Linux. One of them is SSH client required by Vagrant for the virtual machine provisioning.
 
