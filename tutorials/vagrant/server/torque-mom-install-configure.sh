@@ -18,9 +18,9 @@ update-rc.d pbs_mom defaults
 update-rc.d pbs_mom enable
 popd
 
-echo server.cluster.org > /var/spool/torque/server_priv/nodes
-echo \$pbsserver server.cluster.org > /var/spool/torque/mom_priv/config
-echo \$mom_host server.cluster.org >> /var/spool/torque/mom_priv/config
+host_fdqn=`hostname -f`
+echo \$pbsserver $host_fdqn > /var/spool/torque/mom_priv/config
+echo \$mom_host $host_fdqn >> /var/spool/torque/mom_priv/config
 
-service pbs_server reload
+service pbs_server restart
 service pbs_mom start

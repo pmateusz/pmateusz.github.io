@@ -8,9 +8,9 @@ Vagrant.configure("2") do |config|
     vm.cpus = 4
   end
 
-  config.vm.provision :shell, path: "torque-install-third-party.sh"
-  config.vm.provision :shell, path: "torque-compile.sh"
-  config.vm.provision :shell, path: "apache-install-configure.sh"
+  #config.vm.provision :shell, path: "torque-install-third-party.sh"
+  #config.vm.provision :shell, path: "torque-compile.sh"
+  #config.vm.provision :shell, path: "apache-install-configure.sh"
   config.vm.provision :shell, path: "torque-server-install-configure.sh"
   config.vm.provision :shell, path: "torque-mom-install-configure.sh"
 end

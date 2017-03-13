@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+remote_node_host="node1.cluster.org"
+remote_node_addr="192.168.90.3"
+
 killall pbs_server
 killall trqauthd
 
@@ -63,3 +66,12 @@ qmgr -c 'set queue batch enabled = true'
 qmgr -c 'set queue batch resources_default.walltime = 1:00:00'
 qmgr -c 'set queue batch resources_default.nodes = 1'
 qmgr -c 'set server default_queue = batch'
+
+known_node=`grep $remote_node_addr /etc/hosts`
+if [[ -z $known_node ]] ; then
+    echo $remote_node_addr $remote_node_host >> /etc/hosts ;
+fi
+
+echo `hostname -f` > /var/spool/torque/server_priv/nodes
+echo $remote_node_host >> /var/spool/torque/server_priv/nodes
+service pbs_server restart
