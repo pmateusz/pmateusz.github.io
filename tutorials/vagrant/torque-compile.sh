@@ -8,7 +8,6 @@ tar -xvzf torque-6.1.0.tar.gz
 rm torque-6.1.0.tar.gz
 cd torque-6.1.0
 
-# --with-default-server=server-alias.cluster.org 
 ./configure --enable-gcc-warnings --enable-shared --enable-static \
 --enable-gui --enable-fast-install \
 --enable-syslog --enable-cgroups --enable-unixsockets --enable-tcl-qstat --with-scp \

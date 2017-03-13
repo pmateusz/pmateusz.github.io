@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 
-pushd .
+killall pbs_mom
 
-cd /etc
-hostnamectl set-hostname server
-grep --invert-match --word-regexp "192.168.90.2" hosts > tmp_hosts
-echo 192.168.90.2 server.cluster.org server > hosts
-cat tmp_hosts >> hosts
-rm tmp_hosts
+pushd .
 
 cd /var/www/deb/amd64
 ./torque-package-devel-linux-x86_64.sh --install
@@ -23,6 +18,9 @@ update-rc.d pbs_mom defaults
 update-rc.d pbs_mom enable
 popd
 
-echo server > /var/spool/torque/server_priv/nodes
-echo server.cluster.org >> /var/spool/torque/server_priv/nodes
-echo server.cluster.org > /var/spool/torque/mom_priv/config
+echo server.cluster.org > /var/spool/torque/server_priv/nodes
+echo \$pbsserver server.cluster.org > /var/spool/torque/mom_priv/config
+echo \$mom_host server.cluster.org >> /var/spool/torque/mom_priv/config
+
+service pbs_server reload
+service pbs_mom start

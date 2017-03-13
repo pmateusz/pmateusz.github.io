@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-# TODO: take IP as a required parameter
-
 killall pbs_server
 killall trqauthd
 
@@ -21,14 +19,13 @@ update-rc.d trqauthd enable
 update-rc.d pbs_server defaults
 update-rc.d pbs_server enable
 
-cd /etc
-hostnamectl set-hostname server
-grep --invert-match --word-regexp "192.168.90.2" hosts > tmp_hosts
-echo 192.168.90.2 server.cluster.org server > hosts
-cat tmp_hosts >> hosts
-rm tmp_hosts
-
 popd
+
+# credits to https://jabriffa.wordpress.com/2015/02/11/installing-torquepbs-job-scheduler-on-ubuntu-14-04-lts/
+echo server.cluster.org > /var/spool/torque/server_name
+echo server.cluster.org  > /var/spool/torque/server_priv/acl_svr/acl_hosts
+echo root@server.cluster.org  > /var/spool/torque/server_priv/acl_svr/operators
+echo root@server.cluster.org  > /var/spool/torque/server_priv/acl_svr/managers
 
 pbs_server -ft create
 # Starting in TORQUE 3.1 the server is multi-threaded.
@@ -43,13 +40,8 @@ if [ -z "$pbs_server_pid" ] ; then
   exit 1;
 fi
 
-# credits to https://jabriffa.wordpress.com/2015/02/11/installing-torquepbs-job-scheduler-on-ubuntu-14-04-lts/
-echo server.cluster.org > /var/spool/torque/server_name
-echo server.cluster.org > /var/spool/torque/server_priv/acl_svr/acl_hosts
-echo root@server.cluster.org > /var/spool/torque/server_priv/acl_svr/operators
-echo root@server.cluster.org > /var/spool/torque/server_priv/acl_svr/managers
-
 trqauthd
+
 qmgr -c 'p s'
 qmgr -c 'set server managers += vagrant@*.cluster.org'
 if [ "$?" -ne "0" ] ; then
