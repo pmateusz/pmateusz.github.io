@@ -7,5 +7,5 @@ Vagrant.configure("2") do |config|
     vm.cpus = 2
   end
 
-  config.vm.provision :shell, path: "torque-mom-install-configure.sh"
+  config.vm.provision :shell, path: "torque-mom-install-configure.sh", args: "server.cluster.org 192.168.90.2 http://192.168.90.2/deb/amd64"
 end

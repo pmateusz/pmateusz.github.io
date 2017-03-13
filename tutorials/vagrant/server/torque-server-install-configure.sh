@@ -1,34 +1,39 @@
 #!/usr/bin/env bash
 
-remote_node_host="node1.cluster.org"
-remote_node_addr="192.168.90.3"
+if [ -z $(pgrep pbs_server) ]; then
+  service pbs_server stop
+fi
 
-killall pbs_server
-killall trqauthd
+if [ -z $(pgrep trqauthd) ]; then
+  service trqauthd stop
+fi
 
 pushd .
 
-cd /var/www/deb/amd64
-./torque-package-devel-linux-x86_64.sh --install
-./torque-package-clients-linux-x86_64.sh --install
-./torque-package-server-linux-x86_64.sh --install
+for package_name in devel clients server
+do
+/var/www/deb/amd64/torque-package-$package_name-linux-x86_64.sh --install
+done
 ldconfig
-cd /root/Applications/torque-6.1.0/contrib/init.d/
-cp debian.trqauthd /etc/init.d/trqauthd
-cp debian.pbs_server /etc/init.d/pbs_server
-cd /etc/init.d/
-update-rc.d trqauthd defaults
-update-rc.d trqauthd enable
-update-rc.d pbs_server defaults
-update-rc.d pbs_server enable
+
+for service_name in trqauthd pbs_server
+do
+cp /root/Applications/torque-6.1.0/contrib/init.d/debian.$service_name /etc/init.d/$service_name
+update-rc.d $service_name defaults
+update-rc.d $service_name enable
+done
+
+service trqauthd restart
+
+server_fdqn=`hostname -f`
+cd /var/spool/torque
+echo $server_fdqn > server_name
+
+cd ./server_priv/acl_svr
+echo $server_fdqn > acl_hosts
+echo root@$server_fdqn | tee operators managers
 
 popd
-
-# credits to https://jabriffa.wordpress.com/2015/02/11/installing-torquepbs-job-scheduler-on-ubuntu-14-04-lts/
-echo server.cluster.org > /var/spool/torque/server_name
-echo server.cluster.org  > /var/spool/torque/server_priv/acl_svr/acl_hosts
-echo root@server.cluster.org  > /var/spool/torque/server_priv/acl_svr/operators
-echo root@server.cluster.org  > /var/spool/torque/server_priv/acl_svr/managers
 
 pbs_server -ft create
 # Starting in TORQUE 3.1 the server is multi-threaded.
@@ -36,42 +41,40 @@ pbs_server -ft create
 # up. If we go to qmgr right away it will fail.
 sleep 2
 pbs_server --about
-
 pbs_server_pid=`pgrep pbs_server`
 if [ -z "$pbs_server_pid" ] ; then
   echo "ERROR: pbs_server failed to start, check syslog and server logs for more information"
   exit 1;
 fi
 
-trqauthd
+read -d '' server_config << EOF
+set server managers += vagrant@*.cluster.org;
+set server operators += vagrant@*.cluster.org;
+set server scheduling = true;
+set server keep_completed = 300;
+set server mom_job_sync = true;
+EOF
 
-qmgr -c 'p s'
-qmgr -c 'set server managers += vagrant@*.cluster.org'
+echo "$server_config" | qmgr -e
 if [ "$?" -ne "0" ] ; then
-  echo "ERROR: cannot set TORQUE admins"
-  qterm
+  echo "ERROR: cannot configure server";
+  qterm;
   exit 1;
 fi
 
-qmgr -c 'set server operators += vagrant@*.cluster.org'
-qmgr -c 'set server scheduling = true'
-qmgr -c 'set server keep_completed = 300'
-qmgr -c 'set server mom_job_sync = true'
+read -d '' default_queue << EOF 
+create queue batch;
+set queue batch queue_type = execution;
+set queue batch started = true;
+set queue batch enabled = true;
+set queue batch resources_default.walltime = 1:00:00;
+set queue batch resources_default.nodes = 1;
+set server default_queue = batch;
+EOF
 
-# create default queue
-qmgr -c 'create queue batch'
-qmgr -c 'set queue batch queue_type = execution'
-qmgr -c 'set queue batch started = true'
-qmgr -c 'set queue batch enabled = true'
-qmgr -c 'set queue batch resources_default.walltime = 1:00:00'
-qmgr -c 'set queue batch resources_default.nodes = 1'
-qmgr -c 'set server default_queue = batch'
-
-known_node=`grep $remote_node_addr /etc/hosts`
-if [[ -z $known_node ]] ; then
-    echo $remote_node_addr $remote_node_host >> /etc/hosts ;
+echo "$default_queue" | qmgr -e
+if [ "$?" -ne "0" ] ; then
+  echo "ERROR: cannot configure default queue";
+  qterm;
+  exit 1;
 fi
-
-echo `hostname -f` > /var/spool/torque/server_priv/nodes
-echo $remote_node_host >> /var/spool/torque/server_priv/nodes
-service pbs_server restart

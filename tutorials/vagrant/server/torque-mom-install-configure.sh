@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
-killall pbs_mom
+service pbs_mom stop
 
 pushd .
 
 cd /var/www/deb/amd64
-./torque-package-devel-linux-x86_64.sh --install
-./torque-package-clients-linux-x86_64.sh --install
-./torque-package-mom-linux-x86_64.sh --install
+for package_name in devel clients mom
+do
+    ./torque-package-$package_name-linux-x86_64.sh --install
+done
 ldconfig
 
 cd /root/Applications/torque-6.1.0/contrib/init.d/
@@ -16,11 +17,17 @@ cp debian.pbs_mom /etc/init.d/pbs_mom
 cd /etc/init.d/
 update-rc.d pbs_mom defaults
 update-rc.d pbs_mom enable
+
+cd /var/spool/torque/mom_priv
+host_fdqn=`hostname -f`
+echo \$pbsserver $host_fdqn > config
+echo \$mom_host $host_fdqn >> config
 popd
 
-host_fdqn=`hostname -f`
-echo \$pbsserver $host_fdqn > /var/spool/torque/mom_priv/config
-echo \$mom_host $host_fdqn >> /var/spool/torque/mom_priv/config
-
-service pbs_server restart
 service pbs_mom start
+
+mom_pid=`pgrep pbs_mom`
+if [ -z $mom_pid ]; then
+    echo "Failed to start the pbs_mom service";
+    exit 1;
+fi
