@@ -395,3 +395,4 @@ http://docs.adaptivecomputing.com/torque/3-0-5/a.ltorquequickstart.php
 http://askubuntu.com/questions/299371/correct-way-to-install-a-custom-upstart-service
 http://askubuntu.com/questions/86822/how-can-i-copy-the-contents-of-a-folder-to-another-folder-in-a-different-directo
 https://jabriffa.wordpress.com/2015/02/11/installing-torquepbs-job-scheduler-on-ubuntu-14-04-lts/
+update-rc.d -f <service> remove
