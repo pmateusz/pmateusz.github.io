@@ -1,0 +1,9 @@
+theme: jekyll-theme-cayman
+
+title: pmateusz.github.io
+description: ""
+show_downloads: ["false"]
+google_analytics: [UA-93830359-1]
+
+repository: pmateusz/pmateusz.github.io
+gems: ['jekyll-github-metadata']
