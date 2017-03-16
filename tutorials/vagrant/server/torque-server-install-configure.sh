@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 if [ -z $(pgrep pbs_server) ]; then
-  service pbs_server stop
+  killall pbs_server
 fi
 
 if [ -z $(pgrep pbs_sched) ]; then
-  service pbs_sched stop
+  killall pbs_sched
 fi
 
 if [ -z $(pgrep trqauthd) ]; then
-  service trqauthd stop
+  killall trqauthd
 fi
 
 pushd .
