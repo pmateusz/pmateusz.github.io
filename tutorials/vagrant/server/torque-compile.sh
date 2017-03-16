@@ -20,11 +20,11 @@ make
 make packages
 
 mkdir -p /var/www/deb/amd64
-mv torque-package-* /var/www/deb/amd64
+cp -rf torque-package-* /var/www/deb/amd64
 
 cd contrib/init.d
-cp debian.pbs_mom /var/www/deb/amd64/pbs_mom
-cp debian.pbs_server /var/www/deb/amd64/pbs_server
-cp debian.trqauthd /var/www/deb/amd64/trqauthd
+cp -rf debian.pbs_mom /var/www/deb/amd64/pbs_mom
+cp -rf debian.pbs_server /var/www/deb/amd64/pbs_server
+cp -rf debian.trqauthd /var/www/deb/amd64/trqauthd
 
 popd
