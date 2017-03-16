@@ -12,7 +12,7 @@ fi
 #apt-get update
 apt-get install --assume-yes cpuset openssl cgroup-bin \
     libtool tcl8.6-dev tk8.6-dev libxml2-dev libcgroup-dev \
-    libhwloc-dev libboost-all-dev libssl-dev
+    libhwloc-dev libboost1.55-dev libssl-dev
 
 pushd .
 
