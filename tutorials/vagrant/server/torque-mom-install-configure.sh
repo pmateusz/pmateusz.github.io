@@ -11,10 +11,9 @@ do
 done
 ldconfig
 
+update-rc.d -f pbs_mom remove
 cd /root/Applications/torque-6.1.0/contrib/init.d/
-cp debian.pbs_mom /etc/init.d/pbs_mom
-
-cd /etc/init.d/
+cp -rf debian.pbs_mom /etc/init.d/pbs_mom
 update-rc.d pbs_mom defaults
 update-rc.d pbs_mom enable
 

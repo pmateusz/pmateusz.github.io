@@ -4,6 +4,10 @@ if [ -z $(pgrep pbs_server) ]; then
   service pbs_server stop
 fi
 
+if [ -z $(pgrep pbs_sched) ]; then
+  service pbs_sched stop
+fi
+
 if [ -z $(pgrep trqauthd) ]; then
   service trqauthd stop
 fi
@@ -16,9 +20,10 @@ do
 done
 ldconfig
 
-for service_name in trqauthd pbs_server
+for service_name in trqauthd pbs_server pbs_sched
 do
-cp /root/Applications/torque-6.1.0/contrib/init.d/debian.$service_name /etc/init.d/$service_name
+update-rc.d -f $service_name remove
+cp -rf ~/Applications/torque-6.1.0/contrib/init.d/debian.$service_name /etc/init.d/$service_name
 update-rc.d $service_name defaults
 update-rc.d $service_name enable
 done
@@ -31,7 +36,7 @@ echo $server_fdqn > server_name
 
 cd ./server_priv/acl_svr
 echo $server_fdqn > acl_hosts
-echo root@$server_fdqn | tee operators managers
+echo $USER@$server_fdqn | tee operators managers
 
 popd
 
@@ -78,3 +83,5 @@ if [ "$?" -ne "0" ] ; then
   qterm;
   exit 1;
 fi
+
+service pbs_sched start
