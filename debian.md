@@ -360,7 +360,7 @@ sudo vim /var/spool/torque/server_priv/nodes
 
 Create the service file in /etc/init.d/<service name>
 chmod 755 /etc/init.d/<service name>
-update-rc.d <service name> defaults
+update-rc.d <service namre is my pagee> defaults
 update-rc.d <service name> enable
 
 tail -f <file_name>
