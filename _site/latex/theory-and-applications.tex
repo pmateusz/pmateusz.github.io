@@ -1,0 +1,960 @@
+\documentclass{beamer}
+
+\mode<presentation> {
+%\usetheme{default}
+%\usetheme{AnnArbor}
+%\usetheme{Antibes}
+%\usetheme{Bergen}
+%\usetheme{Berkeley}
+%\usetheme{Berlin}
+%\usetheme{Boadilla}
+%\usetheme{CambridgeUS}
+%\usetheme{Copenhagen}
+%\usetheme{Darmstadt}
+%\usetheme{Dresden}
+%\usetheme{Frankfurt}
+%\usetheme{Goettingen}
+%\usetheme{Hannover}
+%\usetheme{Ilmenau}
+%\usetheme{JuanLesPins}
+%\usetheme{Luebeck}
+%\usetheme{Madrid}
+%\usetheme{Malmoe}
+%\usetheme{Marburg}
+%\usetheme{Montpellier}
+%\usetheme{PaloAlto}
+\usetheme{Pittsburgh}
+%\usetheme{Rochester}
+%\usetheme{Singapore}
+%\usetheme{Szeged}
+%\usetheme{Warsaw}
+
+%\usecolortheme{albatross}
+%\usecolortheme{beaver}
+%\usecolortheme{beetle}
+%\usecolortheme{crane}
+%\usecolortheme{dolphin}
+%\usecolortheme{dove}
+%\usecolortheme{fly}
+%\usecolortheme{lily}
+%\usecolortheme{orchid}
+%\usecolortheme{rose}
+\usecolortheme{seagull}
+%\usecolortheme{seahorse}
+%\usecolortheme{whale}
+%\usecolortheme{wolverine}
+
+%\setbeamertemplate{footline} % To remove the footer line in all slides uncomment this line
+%\setbeamertemplate{footline}[page number] % To replace the footer line in all slides with a simple slide count uncomment this line
+%\setbeamertemplate{navigation symbols}{} % To remove the navigation symbols from the bottom of all slides uncomment this line
+}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title[Short title]{Library Notes}
+
+%\author{Mateusz Polnik}
+%\institute[]
+%{
+%University of Strahclyde \\
+%\medskip
+%\textit{mateusz.polnik@strath.ac.uk}
+%}
+%\date{\today}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Overview}
+\tableofcontents
+\end{frame}
+
+%----------------------------------------------------------------------------------------
+%	PRESENTATION SLIDES
+%----------------------------------------------------------------------------------------
+
+%------------------------------------------------
+\section{Theory and Applications of Robust Optimization}
+
+\begin{frame}[fragile]
+\begin{verbatim}
+@article{10.2307/23070141,
+ ISSN = {00361445},
+ URL = {http://www.jstor.org/stable/23070141},
+ abstract = {In this paper we survey the primary research, both theoretical and applied, in the area of robust optimization (RO). Our focus is on the computational attractiveness of RO approaches, as well as the modeling power and broad applicability of the methodology. In addition to surveying prominent theoretical results of RO, we also present some recent results linking RO to adaptable models for multistage decision-making problems. Finally, we highlight applications of RO across a wide spectrum of domains, including finance, statistics, learning, and various areas of engineering.},
+ author = {Dimitris Bertsimas and David B. Brown and Constantine Caramanis},
+ journal = {SIAM Review},
+ number = {3},
+ pages = {464-501},
+ publisher = {Society for Industrial and Applied Mathematics},
+ title = {Theory and Applications of Robust Optimization},
+ volume = {53},
+ year = {2011}
+}
+\end{verbatim}
+\end{frame}
+
+%------------------------------------------------
+
+\begin{frame}{Optimization Under Uncertainty}
+\begin{itemize}
+\item Solutions to optimization problems can exhibit remarkable sensitivity to perturbation sin the parameters of the problem thus often rendering a computed solution highly infeasible, suboptimal, or both (potentially worthless). \\
+
+\item Stochastic Optimization starts by assuming the uncertainty has a probabilistic description. \\
+
+\item Robust Optimization, is an approach to optimization under uncertainty in which the uncertainty model is not stochastic, but rahter deterministic and set-based. Instead of seeking to immunize the solution in some probabilistic sense to stochastic uncertainty, the decision maker constructs a solution that is feasible for any realization of the uncertainty in a given set. \\
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Robust Optimization}
+
+Robust Optimization can be studied from different perspectives:
+\begin{description}
+\item [Tractability] In general, the robust version of a tractable optimization problem may not itself be tractable. Many well-known classes of optimization problems, including LP, QCQP, SOCP, SDP and some discrete problems have a RO formulation that is tractable. Some care must be taken in the choice of the uncertainty set to ensure that tractability is preserved.
+\end{description}
+\end{frame}
+\begin{frame}{}
+\begin{description}
+\item [Conservativeness and Probability Guarantees] RO constructs solutions that are deterministically immune to realizations of the uncertain parameters in certain sets. This approach may be the only reasonable alternative when the parameter uncertainty is not stochastic, or if distributional information is not readily available. The tractability benefits of the Robust Optimization approach may make it more attracitive thatn alternative approaches from Stochastic Optimization. We might ask for probabilisitc guarantees for the robust solution that can be computed a priori, as a function of the structure and size of the uncertainty set.
+\end{description}
+\end{frame}
+
+\begin{frame}
+\begin{description}
+\item [Flexibility] There is a wide array of optimization classes, and also uncertainty sets.
+\end{description}
+
+\begin{block}{Tractability and Intractability}
+Problems are tractable if they can be reformulated into equivalent problems for which there are known solution algorithms with worst-case running time polynomial in a properly defined input size. Intractable means that existanece of such an algorithm for general instances of the problem would impy $P=NP$.
+\end{block}
+\end{frame}
+
+\section{Portfolio Optimization Example}
+
+\begin{frame}{Porfolio Optimization Example}
+\begin{block}{Problem}
+Allocate one unit of wealth among $n$ risky assets with random return $\tilde{r}$ and a risk-free asset (cash) with a known return $r_{f}$. The investor may not short-sell risky assets or borrow. His goal is to optimally trade-off between expected return and the probability that his portfolio loses money.
+\end{block}
+
+\begin{block}{Observation}
+Calculating a point on the pareto frontier is in general NP-hard even when the distribution of returns is discrete.
+\end{block}
+\end{frame}
+
+\begin{frame}{}
+The intractability of the stochastic problem arises because of the probability constraints on the loss:
+\begin{align*}
+\mathbb{P}(\tilde{r}^{'}x + r_{f}(1 - 1^{'}x) >= 1) >= 1 - p_{loss}
+\end{align*}
+\begin{description}
+\item [$x$] is the vector of allocations into the $n$ risky assets (the decision variables)
+\end{description}
+
+The robust formulation replace this probabilistic constraint with a deterministic constraint, requiring the return to be nonnegative for any realization of the reutrns in some given uncertainty set.
+\begin{align*}
+\tilde{r}^{'}x + r_{f}(1 - 1^{'}x) >= 1 \forall \tilde{r} \in \mathcal{R}
+\end{align*}
+\end{frame}
+
+\begin{frame}{}
+\begin{block}{Observation}
+The bigger the set $\mathcal{R}$ is, the lower the objective function (since there are more constraints to satisfy), and the smaller the loss probability $p_{loss}$. Central themes in robust optimization are understanding how to structure the uncertainty set $\mathcal{R}$ so that the resulting problem is tractable and favourably trades off expected return with loss probability $p_{loss}$.
+\end{block}
+
+Types of uncertainty sets (all defined with a parameter to control "size"), so that we can explore tradeoffs:
+\begin{description}
+\item[$\mathcal{R^Q}(\gamma) = {\tilde{r} : (\tilde{r} - \hat{r})'\sigma^{-1}(\tilde{r} - \hat{r}) <= \gamma^{2}}$] The set $\mathcal{R}^Q(\gamma)$ is a quadratic or ellipsoidal uncertainty set. It considers all returns within a radius of $\gamma$ from the mean return vector, where the ellipsoid is tilted by the covariance.   
+\item[$\mathcal{R^D}(\Gamma) = {\tilde{r} : \exists u \in \mathbb{R_{+}^{n}} : \tilde{r_i} = \hat{r_i} + (\underline{r}_i - \hat{r_i})u_i, u_i <= 1, \sum_{i=1}^{n}u_i <= \Gamma}$] The set $\mathcal{R}^D(\Gamma)$ considers all returns such that each component of the return is in the interval $[\underline{r}_i,\tilde{r}_i]$ with the restriction that the total weight of deviation from $\hat{r}_i$ summed across all assets, may be no more than $\Gamma$
+\item[$\mathcal{R^T}(\alpha) = {\tilde{r} : \exists q \in \mathbb{R_{+}^{N}} : \tilde{r} = \sum_{i=1}^{N}q_ir^i, 1'q = 1, q_i <= \frac{1}{N(1 - \alpha)}, i=1,\dots,N}$]
+\end{description}
+$\mathcal{R^T}(k)$ is the tail uncertainty set and considers the convex hull of all possible $N(1-\alpha)$ points averages of the N returns.
+\end{frame}
+
+\begin{frame}{}
+\begin{itemize}
+\item If $\gamma = 0$, $\Gamma = 0$ and $\alpha = 0$ the set is the singleton ${\hat{r}}$.
+\item If $\Gamma = N$ returns for in the range $[\underline{r}_i, \hat{r}^i]$ are considered, with the restriction that total weight of deviation from $\hat{r}_i$ summed across all assets, may be no more than $\Gamma$.
+\item If $\alpha = \frac{N-1}{N}$ this set is a convex hull of all N returns.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+Robust formulation - maximize expected return subject to feasibility and the robust constraint
+Stochastic formulation - minimize probability of loss subject to an expected return constraint as a stochastic program
+The stochastic model is designed for the nominal case, so it is supposed to outperform RO-based formulations
+The largest improvement offered by the stochastic formulation is around 2-3\% decrease in loss probability.
+In general solving the stochastic formualtion exactly is difficult (NP-hard).
+Total time to solve 8 instances is about 5.2 hours; by contrast solving 600 RO-based instances takes under 10 minutes.
+Stochastic formulation's solutions are the most sensitive of the bunch when affected by 1\% perturbation. Loss prabibility from the original model is as large as 5-6\%.
+At 2\% perturbations the SP solution are always outperformed by RO approaches.
+When noise is introduced, it does not appear that exact solutions confer much of an advantage and, in fact, may perform considerably worse.
+$\mathcal{R^Q}$ may be formulated as a second-order cone program (SCOP)
+$\mathcal{R^D} and \mathcal{R^T}$ models may be formulated as an LP
+The exact stochastic model is an NP-hard mixed integer program
+A separate issue is the ability of solution methods to cope with deviations in the underlying model. $\mathcal{R^D}$ aporoach focuses on the worst-case returns of a subset of the asset.
+$R^Q$ approach focuses on the first two moments of the returns.
+$R^T$ approach focuses on averages over the lower tail of the distribution.
+The example shows that RO is useful in dealing with errorneous or noise-corrupted data. We would expect models which are more robust will fare better in situations with new or altered data.
+RO is also more broadly used as a computationally viable way to handle uncertainty in models that are on their own difficult to solve.
+RO-based approaches may perform well and are not far from the optimal under nominal model. In addition they can be computed in orders magnitude faster that the exact solution.
+User needs to have some understanding of the structure of the uncertainty set in order to intelligenlty use RO techniques.
+Overall, RO provides a set of tools that may be useful in dealing with different types of uncertainty (model error or noisy data as well as complex, stochastic descriptions of uncertainty in an explicit model) - in a computationally manageable way.
+
+\end{frame}
+
+\section{Structure and Tractability Results}
+
+\begin{frame}{Robust Optimization}
+\begin{align}
+\label{eq:robust_optimization}
+& minimize~f_0(x) \\
+& subject~to~f_i(x,u_i) \leq 0, \forall u_i \in U_i, i = 1,\dots,m.
+\end{align}
+\begin{description}
+\item [$x \in \mathbb{R}^n$] a vector of decision variables
+\item [$f_0,f_i : \mathbb{R}^n \rightarrow \mathbb{R}$] are functions
+\item [$u_i \in \mathbb{R}^k$] are assumed to take arbitrary values in the uncertainty sets $\mathcal{U}_i \subseteq \mathbb{R}^k$
+\end{description}
+The goal of \ref{eq:robust_optimization} is to compute minimum cost solutions $x^*$ among thos solutions which are feasible for all realizations of the disturbances $u_i$ within $U_i$.
+Number of constraints can be infinite if some of the $U_i$ are continuous sets.
+\end{frame}
+
+\begin{frame}{}
+Straightforward facts about \ref{eq:robust_optimization}:
+\begin{itemize}
+\item The fact that objective function is unaffected by paramter unvertainty does not affect generality of the framework. We may introduce an auxiliary variable $t$ and reformulate the problem:
+\begin{align*}
+\begin{split}
+& minimize~t \\
+& subject~to \max_{u_0 \in U_0} f_0(x, u_0) \leq t
+\end{split}
+\end{align*}
+\item Uncertaity set $U$ has the form $U_1 \times \dots \times U_m$
+\item Constrants without uncertainty are captured in the framwork by assuming the corresponsing $U_i$ to be singletons
+\item Decision and disturbance vectors can contained in more general vector spaces than $\mathbb{R}^n$ or $\mathbb{R}^k$ 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+Robust Optimization is distincly different than sensitivity analysis, which is applied as post-optimization tool for quantifyin the change in cost of the associated optimal solution with small perturbations in the underlying problem data.
+In genral it is not clear when \label{eq:robust_optimization} is efficiently solvable. It is expected that adding robustness to a general optimization problem comes at the expense of significantly increased complexity. Robust conterpart to an arbitrary convex optimization problem in general is intractable. \\
+Much of literature has focused on specifyin classes of functions $f_{i}$ coupled with the types of uncertainty sets $U_i$, that yield tractable robust counterparts.\\
+If we define the robust feasible set to be:
+\begin{align}
+\label{eq:convex_set}
+X(U) = {x | f_i(x, u_i) \leq 0 \forall u_i \in U_i, i = 1,\dots,m}
+\end{align}
+Tractability is tantamount to \ref{eq:convex_set} being convex in x with an efficiently computable separation test.
+\end{frame}
+
+\begin{frame}{Robust Linear Optimization}
+\begin{align}
+\begin{split}
+\label{eq:robust_liear_programming}
+& minimize~c^{T}exact \\
+& subject~to~Ax \leq b, \forall a_1 \in U_1,\dots, a_m \in U_m
+\end{split}
+\end{align}
+\begin{description}
+\item [$a_i$] represents the $i$th row of the uncertain matrix $A$ and takes values in uncertainty set $a_i \in U_i$ if and only if $\max_{a_i \in U_i}a_i^Tx \leq b_i, \forall i$
+\item Robust LP is essentially always tractable for most pracitical unceratinty sets.
+\item In general the resulting robust problem may not be LP.
+\end{description}
+\end{frame}
+
+\begin{frame}{Ellipsoidal Uncertainty}
+Controlling the size of ellipsoidal sets has the interpretation of ta budget of uncertainty that the decision maker selects in order to easily trade off robustness and performance. 
+\begin{align*}
+U = U(\Pi,Q) = {\Pi(u) : \lvert Qu \rvert \leq \rho} 
+\end{align*}
+\begin{description}
+\item [$u \leftarrow \Pi(u)$] affinite embedding of $\mathbb{R}^L$ into $\mathbb{R}^{m \times n}$ and $Q \in \mathbb{R}^{M \times L}$
+\end{description}
+Then \ref{eq:robust_linear_programming} is equivalent to a second-order cone program.
+
+\begin{block}{Example}
+\begin{align*}\begin{split}
+& minimize~c^Tx \\
+& subject~to~a_ix \leq b_i, \forall a_i \in U_i, \forall i = 1,\dots,m
+\end{split}\end{align*}
+\begin{description}
+\item [$U = {(a_1,\dots,a_m) : a_i=a_i^0 + \triangle_i u_i, i=1,\dots,m, \lvert u \rvert_2 \leq \rho}$] uncertainty set
+\item [$a_i^0$] nominal value
+\end{description}
+
+Then the robust counterpart is:
+\begin{align*}
+\begin{split}
+& minimize~c^Tx \\
+& subject~to~a_i^0x \leq b_i - /rho \lvert /triangle_ix \rvert_2, /forall i=1,\dots,m
+\end{split}
+\end{align*}
+\end{block}
+\end{frame}
+
+\begin{frame}{Polyhedral Uncertainty}
+Polyhedral uncertainty can be viewed as a special case of ellipsoidal uncertainty.
+When $U$ is polyhedral, the subproblem becomes linear, and the robust counterpart is equivalent to a linear optimization problem.
+
+\begin{align*}
+\begin{split}
+\min~&c^Tx \\
+subject~to~\max_{D_i a_i \leq d_i} &a_{i}^{T}x \leq b_{i}, i=1,\dots,m
+\end{split}
+\end{align*}
+
+$\Updownarrow$
+
+\begin{align*}
+\begin{split}
+& min ~ c^Tx  \\
+subject~to~& p_i^Td_i \leq b_i, i=1,\dots,m\\
+& p_i^TD_i = x, i=1,\dots,m \\
+& p_i \geq 0, i=1,\dots,m
+\end{split}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Cardinality Constrained Uncertainty}
+A family of polyhedral uncertainty sets that encode a budget of uncertainty in terms pf cardinality constraints: the number of parameters of the problem that are allowed to vary from their nominal values.
+We allow at most $\Gamma_{i}$ coefficients of row $i$ to deviate.
+The positive number $\Gamma_{i}$ denotes the budget of uncertainty for the $i^{th}$ constraint
+Just as ellipsoidal sizing, it controls the trade-off between the optimiality of the solution, and its robustness to a parameter perturbation.
+\end{frame}
+
+\begin{frame}{}
+\begin{align*}
+\begin{split}
+& \min : c^Tx \\
+subject~to~&~\sum_ja_{ij}x_{j} + \max_{S_i\subseteq J_i:|S_i|=\Gamma_i} \sum_{j \in S_j}\hat{a}_{ij}y_j \leq b_i, 1 \leq i \leq m \\
+& -y_j \leq x_j \leq y_j \\
+& l \leq x \leq u \\
+& y \geq 0
+\end{split}
+\end{align*}
+
+\begin{align*}
+\begin{split}
+& \max c^Tx \\
+& subject~to~\sum_{j}a_{ij}x_{j} + z_{i}\Gamma_{i} + \sum_{j}p_{ij} \leq b_i, \forall i \\
+& z_i + p_{ij} \geq \hat{a}_{ij}y_{j} \forall i,j \\
+& -y_i \leq x_j \leq y_j \forall j \\
+& l \leq x \leq u \\
+& p \geq 0 \\
+& y \geq 0
+\end{split}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Norm Uncertainty}
+Robust Linear Optimization problems with uncertainty sets described by more general norms lead to convex optimization problems with constraints related to the dual norm.
+
+\begin{align*}
+U = \{A : \lvert M(vec(A) - vec(\bar{A})) \rvert \leq \triangle\}
+\end{align*}
+\begin{description}
+\item [$M$] an invertible matrix
+\item [$\bar{A}$] any constant matrix
+\item [$\lvert \cdot \rvert$] any norm
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+\begin{align*}
+\begin{split}
+& \min c^Tx \\
+& subject~to~\hat{A}_{i}^{T}x + \triangle \lvert (M^T)^-1x_i \rvert ^{*} \leq b_i, i=1,\dots,m
+\end{split}
+\end{align*}
+\begin{description}
+\item [$x_i \in \mathbb{R}^{(m \cdot n)\times1}$] is a vector that contains $x \in \mathbb{R}^{n}$ in entries $(i-1)\cdot + 1$ through $i \cdot n$ and 0 everywhere else
+\item [$\lvert \cdot \rvert$] is the corresponding dual norm of $\lvert \cdot \rvert$
+\end{description}
+$l_1$ and $l_{\inf}$ norms result in linear optimization problems \\
+$l_2$ norm results in a second-order cone problem
+\end{frame}
+
+\begin{frame}{Robust Quadratic Optimization}
+\begin{block}{Quadratically Constrained Quadratic Programs (QCQP)}
+Defining function:
+\begin{align*}
+f_{i}(x,u_i) = \lVert A_ix \rVert ^{2} + b_i^Tx + c_i
+\end{align*}
+\end{block}
+\begin{block}{Second Order Cone Programs (SOCP)}
+Defining function:
+\begin{align*}
+f_{i}(x, u_i) = \lVert A_ix + b_i \rVert - c_i^Tx - d_i
+\end{align*}
+\end{block}
+For both classes, if the uncertainty set $U$ is a single ellipsoid the robust counterpart is a semidefinite optimization problem.
+If $U$ is polyhedral or the intersection of ellipsoids, the robust counterpart is NP-hard.
+\end{frame}
+
+\begin{frame}{Simple Ellipsoidal Uncertainty Example}
+Quadratic constraint: \\
+\begin{align}
+x^{T}A^{T}Ax \leq 2b^Tx + c, \forall (A,b,c) \in U
+\end{align}
+
+$U$ is an ellipsoid about a nominal point $(A^{0}, b^{0}, c^{0})$:
+\begin{align}
+U \triangleq \{ (A,b,c) := (A^{0},b^{0},c^{0}) + \sum^{L}_{l=1}u_{l}(A^{l},b^{l},c^{l}) : \lVert u \rVert_{2} \leq 1 \}
+\end{align}
+Problem:
+\begin{align*}
+\begin{split}
+\left[
+    \begin{array}{l}
+        \max : x^{T}A^{T}Ax - 2b^{T}x - c \\
+        subject~to~: (A,b,c) \in U
+    \end{array}
+\right] \leq 0
+\end{split}
+\end{align*}
+\end{frame}
+
+\begin{frame}{}
+The problem is maximizing a convex quadratic therefore is not convex. \\
+It enjoys a hidden convexity property that allows it to be reformulated as a convex semidefinite optimization problem. This is related to $S-lemma$.
+The lemma gives the boundary between what we can solve exactly, and where solving the subproblem becomes difficult.
+If the uncertainty set is an intersection of ellipsoids or polyhedral, then exact solution of the subproblem is NP-hard.
+Taking the dual of the SDP resulting from the S-lemma, we have an exact, convex refolmulation of the subproblem in the RO problem.
+\end{frame}
+
+\begin{frame}{}
+\begin{block}{}
+Given a vector $x$, it is feasible to the robust constraint if and only if there exists a scalar $\tau \in \mathbb{R}$ such that the following matrix inequality holds:
+\begin{align*}
+    \begin{bmatrix}
+    c^0 + 2x^Tb^0 - \tau & \frac{1}{2}c^1+x^Tb^1 & \dots & c^L+x^Tb^L & \left(A^{0}x\right)^{T} \\
+    \frac{1}{2}c^{1} + x^Tb^{1} & \tau & & & \left(A^{1}x\right)^{T} \\
+    \vdots & & \ddots & & \vdots \\
+    \frac{1}{2}c^{L} + x^{T}b^{L} & & & \tau & \left(A^{L}x\right)^{T} \\
+    A^{0}x & A^{1}x & \dots & A^{L}x & I
+    \end{bmatrix} \succeq 0
+\end{align*}
+\end{block}
+\end{frame}
+
+\begin{frame}{Robust Semidefinite Optimization}
+\begin{itemize}
+\item Robust SDP is an intractable problem.
+\item With all eipsoidal uncertainty sets, robust couterparts of semidefinite optimization problems are, in general,NP-hard.
+\item Similar negative results hold in the case of polyhedral uncertainty sets.
+\item One exception is when the uncertainty set is represented as unstructured norm-bounded uncertainty.
+\item Computing approximate solutions that are robust feasible but not robust optimal to robust semidefinite optimization received considerable attention.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\begin{block}{Unstructured Norm-bound Uncertainty}
+\begin{align*}
+A_{0}(x) + L'(x)\zeta R(x) + R(x)\zeta L'(x)
+\end{align*}
+\end{block}
+\end{frame}
+
+\begin{frame}{Approximation Goodness}
+Measure of how close the inner approximation is to the true feasible set.
+\begin{align*}
+\rho(AR:R) = \inf \left\{\rho \geq 1 : X(AR) \supseteq X(U(\rho)) \right\}
+\end{align*}
+\begin{description}
+\item [$X(AR)$] the feasible set of the approximate robust problem
+\item [$X(U(\rho))$] the feasible set of the original robust SDP with the uncertainty set inflated by a factor of $\rho$
+\end{description}
+When the uncertainty set has structured norm unbouded form there is an inner approximation that $\rho(AR:R) \leq \pi \sqrt{\mu}/2$
+\end{frame}
+
+\begin{frame}{Robust Discrete Optimization}
+Robust counterparts to a number of polynomially solvable combinatorial problems are NP-hard.
+For a cost uncertainty model in which each coefficient $c_j$ is allowed to vary within the interval $\bar{c}_{j}, \bar{c}_{j} + d_{j}$, with no more than $\Gamma \geq 0$ coefficients allowed to vary the robust version of the following combinatorial problem may be solved by solving no more than $n+1$ instances of the underlying nominal problem. This results extends to approximation algorihtms for combinatorial problems. For network flow problems, the above model can be applied and the robust solution can be computed by solving a logarithmic number of nominal, network flow problems.
+\end{frame}
+
+\begin{frame}{}
+\begin{align*}
+\min \bar{c}^{T} + \max_{\{S : S \subseteq N, \lvert S \rvert \leq \Gamma \}} \sum_{j \in S}d_{j}x_{j} \\
+subject~to~x \in X
+\end{align*}
+\begin{description}
+\item [$N = \{1,\dots,n\}$]
+\item [$X$] a fixed set
+\end{description}
+\end{frame}
+
+\section{Choosing Uncertainty Sets}
+
+\begin{frame}{}
+\begin{itemize}
+\item A central question in the Robust Optimization literature has been probability guarantees on feasibility under particular distributional assumptions for disturbance vectors.
+\end{itemize}
+What is the smalles $\epsilon$ such that:
+\begin{align*}
+x \in X(U) \Rightarrow \mathbb{P}(f_{i}(x, u_{i}) > 0) \leq \epsilon
+\end{align*}
+There are fundamental connections between distributional ambiguity, measures of risk and uncertainty sets in robust optimization.
+\end{frame}
+
+\begin{frame}{Probability Guarantees}
+\begin{itemize}
+\item Prababilistic constraints are also called chance constraints
+\item Robust LP model based on ellipsoids of radius $\Omega$. Uncertain coefficients have bounded, symmetric support. They show that corresponding robust feasible solutions must satisfy the constraint with high probability.
+\end{itemize}
+Constraint form:
+\begin{align*}
+\sum_{j}\tilde{a}_{ij}x_{j} \leq b_{i}
+\end{align*}
+\begin{description}
+\item [$\tilde{a}_{ij} = (1 + \epsilon \xi_{ij})a_{ij}$] uncertain coefficient
+\item [$a_{ij}$] nominal value for the coefficient
+\item [$\xi_{ij}$] are zero mean, independent over $j$, and supported on $[-1, 1]$
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+Robust constraint:
+\begin{align*}
+\sum_{j}a_{ij}x_{j} + \epsilon \Omega \sqrt{\sum_{j}a_{ij}^{2}x_{j}^{2}} \leq b_{i}^{+}
+\end{align*}
+Minimum probability:
+\begin{align*}
+1 - e^{-\Omega^{2}/2}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Another Proposal}
+\begin{align*}
+\mathcal{U}_{\Sigma} = \{
+        \bar{A} + \sum_{j \in J}z_{j}\hat{a}_{j} : \lVert z \rVert_{\inf} \leq 1, \sum_{j \in J} 1(z_{j}) \leq \Gamma
+    \}
+\end{align*}
+\begin{description}
+\item [$a$] uncertain, linear constraint
+\item [$1 : \mathbb{R} \leftarrow \mathbb{R}$] indicator function $1(y) = 0$ if and only if $y = 0$
+\item [$\bar{A}$] vector of nominal values
+\item [$J \subset \{1,\dots,n\}$] index set of uncertain coefficients
+\item [$\Gamma \leq \lvert J \rvert$] integer reflecting the number of coefficients which are allowed to deviate from their nominal values
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+Problem:
+\begin{align*}
+\label{eq:bertsimas_sim_model}
+\max_{a \in /mathcal{U}_{\Gamma}}a^{T}x^{*} \leq b
+\end{align*}
+Probability guarantee:
+\begin{align*}
+\mathbb{P}(\tilde{a}^{T}x^{*} > b) \leq e^{- \frac{\Gamma^{2}}{2 \lvert J \rvert}}
+\end{align*}
+\begin{description}
+\item [$\tilde{a}$] random vector with independent components $a_{j}$ distributed simmetrically on $[\bar{a}_{j} - \hat{a}_{j}, \bar{a}_{j} + \hat{a}_{j}] if j \in J$
+\item [$a_{j} = \bar{a}_{j}$] otherwise
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+In the case of linear optimization with only partial moment information (i.e. mean and covariance) the probability guarantees can be delivered for the general norm uncertainty model \ref{eq:bertsimas_sim_model}
+\begin{align*}
+\mathbb{P}(\tilde{a}^{T}x^{*} > b) \leq \frac{1}{1 + \triangle^{2}}
+\end{align*}
+\begin{description}
+\item [$\triangle$] radius of the uncertainty set
+\item [$mean and covariance$] used for $\bar{A}$ and $M$
+\item [$x^{*}$] feasible for the robust problem
+\item [$\lVert \cdot \rVert$] the Euclidean norm
+\end{description}
+
+For more general robust conic optimization problems, results on probability guarantees are more elusive.
+\end{frame}
+
+\begin{frame}{Distributional Uncertainty}
+Consider a function $u(x,\xi)$ where $\xi$ is a random parameter on some measure space $(\Omega, \mathcal{F})$.
+$u$ is a concave, nondecreasing payoff function.
+Full description of $\xi$ is unknown. The distribution of $\xi$ belongs to a set of distribution $\mathcal{Q}$.
+
+For any set $\mathcal{Q}$, there is a convex, non-increasing, translation-invariant, positive homogeneous function $/mi$ on the induced space of random variables, such that:
+\begin{align}
+\inf_{\mathbb{Q} in \mathcal{Q}} \mathbb{E}_{\mathbb{Q}}[u(x,\xi)] \geq 0 \Leftrightarrow \mu(u(x,\xi)) \leq 0
+\end{align}
+\end{frame}
+
+\begin{frame}{Economic Interpretation}
+\begin{description}
+\item [$u$] utility function
+\item [$X$] a random variable (e.g. return)
+\item [$\mu(X)$] amount of money requried to be added to X in order to make it acceptable, given utility function u
+\item [monotinocy] one positions that always pays off more thatn another should be deemed less risky
+\item [translation invariance] addition of a sure amount toa position reduces the risk by precisely that amount
+\item [positive homogenity] risks scale equally with the size of the stakes
+\item [convexity] diversification among risky positions should be encouraged
+\end{description}
+The above observation implies an immediate connection between these risk management tools, distributional ambiguity and robust optimization.
+\end{frame}
+
+\begin{frame}{Conditional Value-at-Risk}
+Problem formulation:
+$\mu(\tilde{a}'x-b)$ on linear constraint with an uncertain vector $\tilde{a}$
+
+Robust formulation:
+$a'x \geq b, \forall a \in \mathcal{U}$ \\
+$\mathcal{U} = conv(\{\mathbb{E}_{\mathbb{Q}}[a] : \mathbb{Q} \in \mathcal{Q} \})$ \\
+$\mathcal{Q}$ is the generating family for $\mu$
+
+\begin{block}{CVaR}
+\begin{align*}
+\begin{split}
+\mu(X) \triangleq \inf_{\nu \in \mathbb{R}}\{\nu + \frac{1}{\alpha}\mathbb{E}[-\nu-X]^{+}\} \\
+\alpha \in (0,1]
+\end{split}
+\end{align*}
+\end{block}
+For atomless distributions, CVaR is equivalent to the expected value of the random variable conditional on it being in its lower $\alpha$ quantile.
+\end{frame}
+
+\begin{frame}{}
+Consider the case of an uncertain vector $\tilde{a}$ that follows a discrete distribution ${a_{1},\dots,a_{N}}$ and corresponding probabilities ${p_{1},\dots,p_{N}}$.
+The generating family for CVaR is $\mathcal{Q} = {q \in \triangle^{N} : q_{i} \leq p_{i}/\alpha}$.
+This leads to the uncertainty set:
+\begin{align*}
+\mathcal{U} = conv(\{\frac{1}{\alpha}\sum_{i \in I}p_{i}a_{i} + (1 - \frac{1}{\alpha}\sum_{i \in I}p_{i})a_{j} : I \in {1,\dots,N}, j \in {1,\dots,N}\\I, \sum_{i \in I}p_{i} \leq \alpha \})
+\end{align*}
+This set is a polytope, and therefore the robust optimization problem may be reformulated as a linear program.
+When $p_{i} = 1/N$ and $\alpha = j/N$ for some $j \in \mathbb{Z}_{+}$ this has the intepretation of the convex hull of all j-point averages of $\mathcal{A}$.
+Choquet integrals are the expectation under a set function that is non-addtive and are a classical approach towards dealing with ambiguous distributions in decision theory.
+\end{frame}
+
+\begin{frame}{Distributionally Robust Problem}
+\begin{align*}
+\min_{x \in X} max_{f_{\xi} \in D} \mathbb{E}_{\xi}[h(x, \xi)]
+\end{align*}
+\begin{description}
+\item [$\xi$] a random parameter with distribution $f_{\xi}$ on some set of distributions $D$ supported on a bounded set $S$
+\item [$h$] convex in the decision variable x
+\item [$X$] a convex set
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+\begin{align*}
+\mathcal{D}_{1}(S, \hat(\mu)_{0}, \hat{\Sigma}_{0}, \gamma_{1}, \gamma_{2}) \triangleq \\
+\{\mathbb{P}(\mu \in S) = 1 : (\mathbb{E}[\xi] - \hat{\mu}_{0})'\hat{\Sigma}_{0}^{-1}(\mathbb{E}[\xi] - \hat{\mu}_{0}) \leq \xi_{1}, \\
+\mathbb{E}[(\xi - \hat{\mu}_{0})'(\xi - \hat{\mu}_{0})] \preceq \gamma_{2}\hat{\Sigma}_{0} \}
+\end{align*}
+
+The above can be solved in polynomial time, and, with proper choices of $\gamma_{1}, \gamma_{2}$ and $M$, the resulting optimal value provides an upper bound on the expected cost with hign probability.
+In the case of h as a piecewise linear, convex function, the resulting problem reduces to solving as SDP.
+
+\end{frame}
+
+\begin{frame}{}
+Any robust optimization problem is equivalent to a distributionally robust problem.
+\end{frame}
+
+\begin{frame}{Soft Robust Optimization}
+\begin{block}{}
+\begin{align*}
+\inf_{\mathbb{Q} \in \mathcal{Q}(\epsilon)} \mathbb{E_{\mathbb{Q}}} [f(x,\xi)] \geq -\epsilon, \forall \epsilon \geq 0
+\end{align*}
+\begin{description}
+\item [${\mathcal{Q}(\epsilon)}_{\epsilon \geq 0}$] set of distributions nonincreasing and convex on $\epsilon \geq 0$ 
+\end{description}
+This set of constraints considers different sized uncertainty sets with increasingly looser feasibility requirements as the uncertainty size grows.
+\end{block}
+\end{frame}
+
+\section{Robust Adaptable Optimization}
+
+\begin{frame}{}
+We refer to statis conclusion as the case where the $x_{i}$ are all chosen at time 1 before any relizations of the uncertainty are revealed. The dynamic solution is fully adaptable, where $x_{i}$ may have arbitrary functional dependence on past realizations of the uncertainty.
+For the stochastic knapsack problem, the value of adaptibility is bounded. The value of optimal adaptive solution is no more than a constant factor times the value of the optimal non-adaptive solution.
+For a two-stage mixed integer stochastic optimization problem with uncertainty in the right-hand-side a static robust solution approximates the fully-adaptable two-stage solution for the stochastic problem within a factor of 2 as long as the uncertainty set and the underlyin measure are both symmetric.
+We would generally expect approaches that explicitly incorporate adaptivity to substantially outperform statis approaches in multi-staged problems.
+\end{frame}
+
+\begin{frame}{Receding Horizon or Open Loop Feedback}
+\begin{enumerate}
+\item The static solution over all stages in computed and the first-stage decision is implemented.
+\item In the next stage the process is repeated.
+\end{enumerate}
+This approach is typically tractable, but in many cases may be far from optimal.
+Because it is computed without any adapdability, the first stage decision may be overly conservative.
+\end{frame}
+
+\begin{frame}{Stochastic Optimization}
+\begin{itemize}
+\item Also called complete recourse problem.
+\item The feasibility constraints of a single-stage Stochastic Optimization problem are relaxed and moved into the objective function by assuming that after the first-stage decisions are implemented and the uncertainty realized, the decision-maker has some recourse to ensure that the constraints are satisfied.
+\item In there is no complete recourse (not every first-stage actions can be completed to a feasible solution via second-stage actions) and furthermore the impact and cost of the second-stage actions are uncertain at the first stage, the problem becomes considerably more difficult.
+\item When the uncertainty is assumed to take values in a finite set of small cardinality, the two-stage problem is tractable.
+\item In the case of incomplete recourse where feasibility in not guaranteed, robustness of the first-stage decision may require a very large number of scenarios in order to captpure enough of the structure of the uncertainty.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Tractability of Robust Adaptable Optimization}
+Two stage linear problem with deterministic uncertainty is in general NP-hard.
+\begin{align*}
+\min c^{T}x_{1}
+~subject~to~A_{1}(u)x_{1} + A_{2}(u)x_{2}(u) \leq b, \forall u \in \mathcal{U}
+\end{align*}
+\begin{description}
+\item [$x_{2}(\cdot)$] an arbitrary function of u
+\end{description}
+It can be rewritten to:
+\begin{align*}
+& \min c^{T}x_{1} \\
+& subject~to: x_{1} \in \{x_{1} : \forall u \in \mathcal{U}, \exists x_{2} subject~to~ A_{1}(u)x_{1} + A_{2}(u)x_{2} \leq b \}
+\end{align*}
+
+The feasible set is convex, but nevertheless the optimization problem is in general intractable.
+\end{frame}
+
+\begin{frame}{Dynamic Programming}
+Rectangularity - a special property of the uncertainty set that effectively menas that the decision-maker gains nothing by having future stage actions depend explicitly on past realizations of the uncertainty.
+\end{frame}
+
+\begin{frame}{Affinite Adapdability}
+Approximation to the general robust multi-stage optimization problem is called Affinitely Adjustable Robust Counterpart (AARC)
+the future stage decisions are paramterized as affine functions of the revealed uncertainty
+
+The second stage variable is paramterized as:
+\begin{align*}
+x_{2}(u) = Qu + q
+\end{align*}
+
+Now, the problem becomes:
+\begin{align*}
+\min c^{T}x_{1}
+subject~to: A_{1}(u)x_{1} + A_{2}(u)[Qu + q] \leq b, \forall u \in U
+\end{align*}
+This is a single-stage RO, but still not tractable due to a quadratic dependence on the uncertain parameter u.
+Decision variables are $(x_{1}, Q, q)$ and they are all to be decided before the uncertain parameter $u \in U$ is realized.
+\end{frame}
+
+\begin{frame}{Fixed Recourse}
+Denote the dependence of the optimization parameters $A_{1}$ and $A_{2}$, as:
+\begin{align*}
+[A_{1}, A_{2}](u) = [A_{1}^{(0)}, A_{2}^{(0)}] + \sum^{L}_{l=1}u_{l}[A_{1}^{l}, A_{2}^{l}]
+\end{align*}
+Fixed recourse is when we have $A_{2}^{l} = 0$ for all $l \geq 1$, so the matrix multiplying the second stage variable is constant.
+\end{frame}
+
+\begin{frame}{Two-stage linear optimization with fixed recourse with conic uncertainty set}
+Uncertainty set:
+\begin{align*}
+U = {u : \exists \xi s.t. V_{1}u + V_{2}\xi \geq_{\mathcal{K}} d} \subseteq \mathbb{R}^{L}
+\end{align*}
+$\mathcal{K}$ is a convex cone with dual $\mathcal{K*}$ \\
+$U$ has nonempty interior \\
+AARC can be reformulated:
+\begin{align*}
+\min c^{T}x_{1} \\
+s.t.: V_{1}\lambda^{i} - a^{i}(x_{1},q^{(0)},\dots,q^{L}) = 0, i=1,\dots,m \\
+V_{2}\lambda^{i} = 0, i=1,\dots,m \\
+d^{T}\lambda^{i} + a_{0}^{i}(x_{1},q^{0},\dots,q^{L}) \geq 0, i = 1,\dots,m \\
+\lambda^{i} \geq_{\mathcal{K}^{*}} 0, i=1,\dots,m
+\end{align*}
+
+If the cone $\mathcal{K}$ is the positive orthant, then the AARC given above is an LP.
+\end{frame}
+
+\begin{frame}{Non-Fixed Recourse}
+The robust constraints for the non-fixed recourse can be expressed as:
+$\alpha_{i}(\mathcal{X}) + 2u^{T}\beta{i}(\mathcal(X)) + u^{T}\Gamma_{i}(\mathcal(X))u \geq 0, \forall u \in U$
+
+For uncertainty set given as the intersection of ellipsoids:
+$U \triangleq \{u : u^{T}(\rho^{-2}S_{k})u \leq 1, k=1,\dots,K\}$
+
+$\rho$ controlls the size of the ellipsoids
+
+AARC problem can be approximated by the following semidefinite optimization problem:
+
+\begin{align*}
+\min c^{T}x_{1} \\
+s.t.: \begin{bmatrix}
+\Gamma_{i}(\mathcal{X} + \rho^{-2}\sum_{k=1}^{K}\lambda_{k}S_{k} & \beta_{i}(\mathcal{X})) \\
+\beta_{i}(\mathcal{X})^{T} & \alpha_{i}(\mathcal{X}) - \sum^{\mathcal{K}}_{k=1}\lambda_{k}^{(i)}
+\end{bmatrix} \succeq 0, i = 1,\dots,m
+\end{align*}
+The constant $\rho$ in the definition of the uncertainty set $U$ can be regarderd as a measure of the level of the uncertainty. This allows us to give a bound on the tightness of the approximation.
+\begin{align*}
+\gamma \triangleq \sqrt{2ln(6\sum_{k=1}^{K}Rank(S_{k}))}
+\end{align*}
+\end{frame}
+
+\begin{frame}{}m 
+Let $\mathcal{X}_\rho$ denote the feasible set of the AARC with noise level $\rho$. Let $\mathcal{X}_{\rho}^{approx}$ denot the feasible set of the SDP approximation to the AARC with uncertainty parameter $\rho$. Then, for $\gamma$ defined as above, we have the containment:
+\begin{align*}
+\mathcal{X}_{\gamma\rho} \subseteq \mathcal{X}_{\rho}^{approx} \subseteq \mathcal{X}_{\rho}
+\end{align*}
+\end{frame}
+
+\begin{frame}{Network Design}
+Given a directed graph $G = (V,E)$ and a deman vector $d \in \mathbb{R}^{V}$ where the edges are partitioned into first-stage and second-stage decisions, $E = E_{1} \cup E_{2}$.
+Given a set of nodes, $S \subseteq V$, let $\delta^{+}(S)$, $\delta^{-}(S)$ denote the set of arcs nito and out of the set S.
+Denote the set of flows on the graph satisfying the demand by:
+\begin{align*}
+\mathcal{P}_{d} \triangleq \{x \in \mathbb{R}^{E}_{+} : x(\delta^{+}(i)) - x(\delta^{-}(i)) \geq d_{i}, \forall i \in V \}
+\end{align*}
+If the demand vector $d$ is only known to lie in a given compact set $U \subseteq \mathbb{R}^{V}$, then the set of flows satisfyin every possible demand vector is given by the intersection $\mathcal{P} = \cap_{d \in \mathcal{U}} \mathcal{P}_{d}$
+If the edge set $E$ is partitioned $E = E_{1} \cup E_{2}$ into first and second-stage flow variables, then the set of first-stag-feasible vectors is:
+$\mathcal{P}(E_{1})\triangleq \cap_{d \in \mathcal{U}} Proj_{E_1} \mathcal{P}_d$
+where $Proj_{E_{1}} \mathcal{P}_{d}\triangleq \{x_{E_{1}} : (x_{E_{1}}, x_{E_{2}}) \in \mathcal{P_{d}} \}$
+\end{frame}
+
+\begin{frame}{}
+A vector $x_{E_{1}}$ is an element of $\mathcal{P}(E_{1}) iff x_{E_{1}}(\delta^{+}(S)) - x_{E_{1}}(\delta^{-}(S)) \geq \xi_{S}, \forall subsets S \subseteq V such that \delta^{+}(S) \subseteq E_{1}, where we have defined \xi_{S} \triangleq \max \{d(S) : d \in U\}$
+
+For both budget-restricted uncertainty model $\mathcal{U} = \{d : \sum_{i \in V} \pi_{i} d_{i} \leq \pi_{0}, \bar{d} -h \leq d \leq \bar{d}+h \}$
+and the cardinality-restricted uncertainty model, $\mathcal{U} = \{d : \sum_{i \in V} \lceil \lvert d_{i} - \bar{d}_{i} \rceil \rvert \ h_{i} \leq \Gamma, \bar{d} - h \leq d \leq \bar{d} + h \}$ the separation problem for the set $\mathcal{P}(E_{1})$ is NP-hard.
+
+If the second network topology is totally ordered, then the separation problem becomes tractable.
+\end{frame}
+
+\begin{frame}{Uncertainty Models for Return Mean and Covariance}
+Canonical Problem:
+Allocate wealth across $n$ risky assets with mean returns $\mu \in \mathbb{R}^n$ and return canonical problem is to allocate wealth across $n$ risky assets with mean returns $\mu \in \mathbb{R}^n$ and return covariance matrix $\sigma \in \mathbb{S}^{n}_{++}$ over a vector $w \in \mathbb{R}^n$.
+
+Minimum variance problem:
+\begin{align}
+\label{eq:minimum_variance_problem}
+\min \{w^T\sigma w : \mu^Tw \geq r, w \in \mathcal{W}\}
+\end{align}
+
+Maximum return problem:
+\begin{align}
+\label{eq:maximum_return_problem}
+\max \{\mu^Tw : w^T\sigma w \leq \sigma^{2}, w \in \mathcal{W}\}
+\end{align}
+
+\begin{description}
+\item [$r$ and $\sigma$] investor-specific constants
+\item [$\mathcal{W}$] set of acceptable weight vectors ($\mathcal{W}$ typically contains the normalization constraint $e^{T}w = 1$ and often no short-sales constraint $w_{i} \geq 0, i=1,\dots,n$)
+\end{description}
+\end{frame}
+
+\begin{frame}{}
+$\mu$ and $\Sigma$ are rarely known with a complete precision.
+Box, ellipsoidal and other uncertainty sets have been proposed for $\mu$ and $\Sigma$
+\begin{align*}
+\mathcal{M} = \{\mu \in \mathbb{R}^{n} | \underline{\mu}_{i} \leq \mu \leq \overline{\mu}_{i}, i = 1,\dots,m\} \\
+\mathcal{S} = \{\Sigma \in \mathbb{S}_{+}^{n} | \underline{\Sigma}_{ij} \leq \Sigma_{ij} \leq \overline{\Sigma}{ij}, i=1,\dots,n, j=1,\dots,n\}
+\end{align*}
+With these uncertainty structures, they provide a polynomial-time cutting plane algorithm for solving robust variants of problems \ref{minimum_variance_problem} and \ref{eq:maximum_return_problem}.
+\end{frame}
+
+\begin{frame}{Distribution-free Model for near-arbitrage opportunities}
+Constraints for arbitrage opportunity:
+\begin{description}
+\item [$\mu^{T}w \geq 0$]
+\item  [$w^{T}\Sigma w = 0$]
+\item [$e^{T} w \leq = 0$]
+\end{description}
+
+Pure arbitrage cannot exist, instead, the authors seek robust profit opportunities at level $\theta$:
+\begin{align*}
+\mu^{T} - \theta\sqrt{w^T\Sigma w} \geq 0~and~e^T < 0
+\end{align*}
+
+Maximum-$\theta$ robust profit opportunity problem
+\begin{align}
+\label{eq:maximum_robust_profit_opportunity}
+\sup_{\theta,\omega} \{ \theta: \mu^{T}\omega - \theta\sqrt{\omega^{T}\Sigma \omega} \geq 0, e^{t}\ \}
+\end{align}
+
+\ref{eq:maximum_robust_profit_opportunity} is equivalent to a convex quadratic optimization problem.
+
+\begin{align}
+\label{eq:min_random_return}
+\min_{R \sim (\mu,\Sigma)} \mathbb{E}_{R} [u(x'R)]
+\end{align}
+\begin{description}
+\item [$R$] random return
+\item [$\mu$] mean
+\item [$\Sigma$] covariance
+\item [$u$] utility function
+\end{description}
+The problem \ref{eq:min_random_return} reduces to a three-point problem.
+\end{frame}
+
+\begin{frame}{}
+\begin{itemize}
+\item Robust approach greatly outperforms a stochastic programming approach based on scenarios. The robust has a much lower observed frequency of losses, always a lower standard deviation of returns, and, in most cases, a higher return.
+\item On the real market data, the robust porfolios did not always outperform the classical approach, but, for high values of the confidence parameter (i.e. larger uncertainty sets), the robust portfolios had superior performance.
+\item Robust portfolios significantly outperform nominal portfolios in terms of worst-case value-at-risk.
+\item The robust portfolios offer significant improvement in worst-case return versus nominal portfolios at the expence of a much smaller cost in expected return.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Robust Optimization and Regularization}
+$\mathcal{l}^{2}$-regularized regression problem, is the solution to a robust optimization problem
+\begin{align*}
+\min \lVert Ax - b \rVert + \rho\sqrt{\lVert x \rVert^{2}_{2} + 1}
+\end{align*}
+
+\begin{align*}
+\min_{x} \max_{\lVert \triangle A \triangle b \rVert_{F \leq \rho}} \lVert (A + \triangle A)x - (b + \triangle b)\rVert
+\end{align*}
+\begin{description}
+\item [$\lVert \cdot \rVert_{F}$] the Frobenius norm of a matrix $\lVert A \rVert_{F} = \sqrt{Tr(A^{T}A)}$
+\end{description}
+\end{frame}
+
+\begin{frame}{Lasso Regression}
+$\mathcal{l}^{1}$-regularized regression:
+\begin{align*}
+\min \lVert Ax - b \rVert_{2} + \lambda \lVert x \rVert_{1}
+\end{align*}
+Robust problem:
+\begin{align*}
+\min_{x} \max_{\lVert \triangle A \rVert_{\infty,2 \leq \rho}} \lVert (A + \triangle A)x - b\rVert
+\end{align*}
+\end{frame}
+
+\begin{frame}{Binary Classification}
+Binary Classification Problem
+Collection of data vectors associated with two calsses, x and y, with elements of both classes belonging to $\mathbb{R}^{n}$. The data for the two classes have empirical means and covariances
+($\mu_{x}$,$\Sigma_{x}$) and ($\mu_{x}$,$\Sigma_{y}$). We wish to find a linear decision rule for deciding, to which class future observations belong. In other words, we wish to find a hyperplane $\mathcal{H}(a,b) = \{z \in \mathbb{R}^{n} | a^{T}\ = b\}$, with future classification son new data $z$ depending on the sign of $a^{T}z - b$ such that misclassification probability is as low as possible.
+
+Minimax Probability Machine (MPM) finds a separating hyperplane (a,b) to the problem
+
+\begin{align*}
+\max \{\alpha : \inf_{x \sim (\mu_{x}, \Sigma_{x}) }
+\mathbb{P}(a^{T}x \geq b) \geq \alpha,
+\inf_{y \sim (\mu_{x}, \Sigma_{x})} \mathbb{P}(a^{T} \leq b) \geq \alpha \}
+\end{align*}
+
+Uncertainty sets:
+\begin{align*}
+\mathcal{X} = \{(\mu_{x}, \Sigma_{x}) |(\mu_{x} - \mu_{x}^{0})\Sigma^{-1}_{x}(\mu_{x} - \mu_{x}^{0}) \leq \nu^{2}, \lVert \Sigma_{x} \Sigma_{x}^{0} \rVert_{F} \leq \rho\} \\
+\mathcal{Y} = \{(\mu_{y}, \Sigma_{y}) |(\mu_{y} - \mu_{y}^{0})\Sigma^{-1}_{y}(\mu_{y} - \mu_{y}^{0}) \leq \nu^{2}, \lVert \Sigma_{y} \Sigma_{y}^{0} \rVert_{F} \leq \rho\}
+\end{align*}
+
+\end{frame}
+
+\begin{frame}{Fisher discriminant analysis (FDA)}
+For random variables belonging to class $x$ and $y$, and a separating hyperplane a, this approach attepmts to maximize the Fisher discriminant ration:
+\begin{align*}
+f(a, \mu_{x}, \mu_{y}, \Sigma_{x}, \Sigma_{y}) := \frac{(\mu_{x} - \mu_{y})^{2}}{a^{T}(\Sigma_{x} + \Sigma_{y})a}
+\end{align*}
+
+Robust Fisher linear discriminant:
+\begin{align*}
+\max_{a \neq 0} min_{(\mu_{x}, \mu_{y}, \Sigma_{x}, \Sigma_{y}) \in \mathcal{U}} f(a, \mu_{x}, \mu_{y}, \Sigma_{x}, \Sigma_{y})
+\end{align*}
+\begin{description}
+\item [$\mathcal{U}$] convex uncertainty set for the mean and covariance
+\end{description}
+\end{frame}
+
+\end{document}

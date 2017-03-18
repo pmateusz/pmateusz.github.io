@@ -1,0 +1,19 @@
+- links:
+  - name: Home
+    link: /
+  - name: About
+    link: /about/
+- links:
+  - name: GitHub
+    link: https://github.com/pmateusz
+    social_icon: GitHub
+    new_window: true
+  - name: LinkedIn
+    link: https://www.linkedin.com/in/mateusz-polnik-a43067a4
+    social_icon: LinkedIn
+    new_window: true
+- links:
+  - name: RSS
+    link: /feed.xml
+    social_icon: RSS
+    new_window: true

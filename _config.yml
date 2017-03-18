@@ -12,10 +12,14 @@ collections:
 # Handling Reading
 safe:         false
 include:      []
-exclude:      ["Gemfile", "Gemfile.lock"]
 keep_files:   [".git"]
 encoding:     "utf-8"
-markdown_ext: "markdown,mkdown,mkdn,mkd,md"
+markdown_ext: "markdown,mkdown,mkdn,mkd,md,yml"
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - LICENCE
 
 # Filtering Content
 show_drafts: null
@@ -52,3 +56,24 @@ defaults: []
 
 liquid:
   error_mode: strict
+
+# Frontend
+title: [Building Pyramids]
+description: [Matt Polnik's blog]
+show_downloads: false
+google_analytics: UA-93830359-1
+
+gems:
+  - jekyll-archives
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-feed
+  - jekyll-paginate
+
+defaults:
+  -
+    scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: default

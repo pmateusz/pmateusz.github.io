@@ -1,0 +1,12 @@
+- name: Home
+  link: /
+  new_window: false
+  highlight: false
+- name: About
+  link: /about/
+  new_window: false
+  highlight: false
+- name: RSS
+  link: /feed.xml
+  new_window: true
+  highlight: false
