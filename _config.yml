@@ -39,7 +39,7 @@ gems:      []
 # Conversion
 markdown:    kramdown
 highlighter: rouge
-lsi:         true
+lsi:         false
 excerpt_separator: "\n\n"
 incremental: true
 
@@ -68,6 +68,10 @@ description: [Matt Polnik's blog]
 show_downloads: false
 google_analytics: UA-93830359-1
 
+jekyll-archives:
+  enabled:
+    - categories
+
 gems:
   - jekyll-archives
   - jekyll-sitemap
@@ -82,3 +86,10 @@ defaults:
       type: "pages"
     values:
       layout: default
+  -
+    scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: post
+      excerpt_separator: <!--more-->

@@ -12,6 +12,10 @@
     link: https://www.linkedin.com/in/mateusz-polnik-a43067a4
     social_icon: LinkedIn
     new_window: true
+  - name: TripAdvisor
+    link: https://tripadvisor.com/members/887mateuszp
+    social_icon: TripAdvisor
+    new_window: true
 - links:
   - name: RSS
     link: /feed.xml

@@ -1,1 +1,395 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="http://jekyllrb.com" version="3.4.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2017-03-18T21:18:50+00:00</updated><id>http://localhost:4000/</id><title type="html">[“Building Pyramids”]</title><subtitle>[&quot;Matt Polnik's blog&quot;]</subtitle></feed>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="http://jekyllrb.com" version="3.4.2">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2017-03-19T22:49:15+00:00</updated><id>http://localhost:4000/</id><title type="html">[“Building Pyramids”]</title><subtitle>[&quot;Matt Polnik's blog&quot;]</subtitle><entry><title type="html">Job Submission in Torque</title><link href="http://localhost:4000/linux/torque/2016/03/16/torque-job-submission.html" rel="alternate" type="text/html" title="Job Submission in Torque" /><published>2016-03-16T00:00:00+00:00</published><updated>2016-03-16T00:00:00+00:00</updated><id>http://localhost:4000/linux/torque/2016/03/16/torque-job-submission</id><content type="html" xml:base="http://localhost:4000/linux/torque/2016/03/16/torque-job-submission.html">&lt;p&gt;&lt;img src=&quot;/assets/images/kelvingrove-spitfire-figher-832x468.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Torque job scripts are developed in a Unix shell or a scripting language with a shell interpreter. Common examples of both approaches are Bash and Python respectively. This post will explain how to submit them to the Torque batch server
+and specify extra requirements that should be statisfied by the runtime environment eligible to run the job.&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;h3 id=&quot;script-template&quot;&gt;Script Template&lt;/h3&gt;
+
+&lt;p&gt;The following template can be used to develop Torque jobs scripts:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l nodes=1:ppn=4&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l mem=2gb&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l 00:10:00&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -N $USER_matlab_job&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -j oe&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -M user@hostname&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -m abe&lt;/span&gt;
+
+date
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The script ought to be interpreted by the Bash shell ran on a single CPU with 4 cores. The total virtual memory allocated by the process will not exceed 2 GB. The process is expected to complete within 10 minutes. The job name should be created by appending &lt;code class=&quot;highlighter-rouge&quot;&gt;_matlab_job&lt;/code&gt; to the owner username. Standard output and standard error output streams should be concatenated and saved in the owner home directory as &lt;code class=&quot;highlighter-rouge&quot;&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$USER_matlab_job&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;sequence_number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt; file, where the sequence_number will be assigned by the batch server after the submission. An email will be sent to &lt;code class=&quot;highlighter-rouge&quot;&gt;user@hostname&lt;/code&gt; as soon as the job begins, runs to completion or is aborted. The script will print date and time on the standard output of the computing node and complete.&lt;/p&gt;
+
+&lt;p&gt;In the previous example we saw how Torque options can be used to describe job allocation requirements and limits for the scheduling process. By the rule of thumb the scheduler will try to find the worst computing node that satisfies all scheduling requirements and limits. The tighther the constraints are the more time the job is expected to wait in the queue.&lt;/p&gt;
+
+&lt;p&gt;Overview of the popular scheduling options is available in the table below. For the complete list refer the the &lt;a href=&quot;http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm&quot;&gt;Administrator guide&lt;/a&gt;.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Option&lt;/th&gt;
+      &lt;th&gt;Example&lt;/th&gt;
+      &lt;th&gt;Meaning&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-a &lt;code class=&quot;highlighter-rouge&quot;&gt;date_time&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-a 1130&lt;/td&gt;
+      &lt;td&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;date_time&lt;/code&gt; argument is in the format &lt;code class=&quot;highlighter-rouge&quot;&gt;[[[[CC]YY]MM]DD]hhmm[.SS]&lt;/code&gt; where &lt;code class=&quot;highlighter-rouge&quot;&gt;CC&lt;/code&gt; is the first two digits of the year (the century), remaining symbols are self-describing. If a job is submitted after the requested start time, it will be scheduled for the following day.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-l &lt;code class=&quot;highlighter-rouge&quot;&gt;resource_list&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-l nodes=2:ppn=8&lt;/td&gt;
+      &lt;td&gt;Defines resources that are required by the job or establishes a limit to the amount of resource that can be consumed. If limit is not specified it is generally considered as infinite. Limits are described in detail in the next section.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-q &lt;code class=&quot;highlighter-rouge&quot;&gt;queue&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-q batch&lt;/td&gt;
+      &lt;td&gt;Submit the job to a specific queue.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-N &lt;code class=&quot;highlighter-rouge&quot;&gt;jobname&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-N $USER_JOB&lt;/td&gt;
+      &lt;td&gt;Give the job a name. The default is the filename of the job script.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-j action&lt;/td&gt;
+      &lt;td&gt;-j oe&lt;/td&gt;
+      &lt;td&gt;Declares if the standard error stream of the job will be merged with the standard output stream of the job.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-p priority&lt;/td&gt;
+      &lt;td&gt;-p 0&lt;/td&gt;
+      &lt;td&gt;Set job priority. The priority is a number between -1024 and +1023. A higher number means higher priority. The default priority is 0.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-M &lt;code class=&quot;highlighter-rouge&quot;&gt;email_address&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-M user@email&lt;/td&gt;
+      &lt;td&gt;Send email to address  when certain events occur. By default an email is sent only if the job is killed by the batch system.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-m &lt;code class=&quot;highlighter-rouge&quot;&gt;[a][b][e]&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-m abe&lt;/td&gt;
+      &lt;td&gt;Send email when the job begins, ends and/or is aborted.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-P	&lt;code class=&quot;highlighter-rouge&quot;&gt;user[:group]&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-P vagrant&lt;/td&gt;
+      &lt;td&gt;Allows a root user or manager to submit a job as another user. Torque treats proxy jobs as though the jobs were submitted by the supplied username.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-v &lt;code class=&quot;highlighter-rouge&quot;&gt;variable_list&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-v VAR1,VAR2=”some value”&lt;/td&gt;
+      &lt;td&gt;Pass variables to the job, either with a specific value or from the submitting environment.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-F&lt;/td&gt;
+      &lt;td&gt;-F “arg1 arg2=arg2value”&lt;/td&gt;
+      &lt;td&gt;Specifies the arguments that will be passed to the job script when the script is launched.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-d path&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;Defines the working directory path to be used for the job. If the -d option is not specified, the default working directory is the home directory.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-o &lt;code class=&quot;highlighter-rouge&quot;&gt;stdout_path&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;Defines the path to be used for the standard output stream of the batch job. The path argument is of the form: &lt;code class=&quot;highlighter-rouge&quot;&gt;[hostname:]path_name&lt;/code&gt; where hostname is the name of a host to which the file will be returned, and &lt;code class=&quot;highlighter-rouge&quot;&gt;path_name&lt;/code&gt; is the path name on that host.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-e &lt;code class=&quot;highlighter-rouge&quot;&gt;stderr_path&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;The same as above for the standard error.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-X&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;Enable X11 forwarding&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;-V&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;Pass the full environment the job was submitted from&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&quot;resource-limits&quot;&gt;Resource Limits&lt;/h3&gt;
+
+&lt;p&gt;Resource limits are used to express temporal, hardware and software constraints that the scheduling process
+should take take into account before assigning a job to a computing node.&lt;/p&gt;
+
+&lt;p&gt;The resource limits are descrived using the following syntax:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l resource_list&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l nodes=2:ppn=8:cpuclock=conservative&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l walltime=10:30&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l mem=4gb&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#PBS -l feature=matlab&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If a limit is not specified it is generally considered as infinite.&lt;/p&gt;
+
+&lt;p&gt;Popular resource limits are explained in the table below. For the complete list of available limits refer to the &lt;a href=&quot;http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/2-jobs/requestingRes.htm&quot;&gt;Administrator guide&lt;/a&gt;.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Examle&lt;/th&gt;
+      &lt;th&gt;Meaning&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;walltime=walltime&lt;/td&gt;
+      &lt;td&gt;walltime=10:30&lt;/td&gt;
+      &lt;td&gt;Maximum wallclock time the job will need. Default is 1 hour. Walltime is specified in seconds or as hh:mm:ss.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;mem=memory&lt;/td&gt;
+      &lt;td&gt;mem=2gb&lt;/td&gt;
+      &lt;td&gt;Total amount of virtual memory that the job will allocate. Default value depends on a queue&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;nodes=num:ppn=num&lt;/td&gt;
+      &lt;td&gt;nodes=1:ppn=4&lt;/td&gt;
+      &lt;td&gt;Number of nodes and number of processors per node required. Default is 1 node and 1 processor per node. By the rule of thumb, if you are not sure how many nodes to request, it should be 1.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;cpluclock=governor-policy-name&lt;/td&gt;
+      &lt;td&gt;cpuclock=ondemand&lt;/td&gt;
+      &lt;td&gt;CPU may be running at a less-than-maximum frequency in order to conserve power. Available governor policies are: performance, powersave, ondemand, conservative. Read more about &lt;a href=&quot;https://wiki.debian.org/HowTo/CpuFrequencyScaling&quot;&gt;CPU frequency scaling&lt;/a&gt;.&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;feature=feature_name&lt;/td&gt;
+      &lt;td&gt;feature=matlab&lt;/td&gt;
+      &lt;td&gt;Request a specific Torque node property. There is no established standard for the list of features. Contact your IT department for more information.&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h3 id=&quot;developing-advanced-scripts&quot;&gt;Developing Advanced Scripts&lt;/h3&gt;
+&lt;p&gt;Complex scripts may require access to information about runtime environment and properties of the job. Torque runner exports basic parameters as environment variables: &lt;code class=&quot;highlighter-rouge&quot;&gt;PBS_JOBID&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;PBS_O_WORKDIR&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;PBS_SERVER&lt;/code&gt;, etc. For the complete list of environment variables refer to the &lt;a href=&quot;http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qsub.htm&quot;&gt;Administrator guide&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;script-submission&quot;&gt;Script Submission&lt;/h3&gt;
+&lt;p&gt;The script can be submitted to the Torque batch server using the &lt;code class=&quot;highlighter-rouge&quot;&gt;qsub&lt;/code&gt; command line utility. The program is distributed as the &lt;code class=&quot;highlighter-rouge&quot;&gt;torque-package-clients-linux-x86_64.sh&lt;/code&gt; self-extracting script.&lt;/p&gt;
+
+&lt;p&gt;The command below submits a job request to execute the &lt;code class=&quot;highlighter-rouge&quot;&gt;script.sh&lt;/code&gt; to the Torque batch server.&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;&amp;gt; &lt;/span&gt;qsub script.sh
+job-id
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The output contains the id assigned to the job by the batch server. Extra options passed to the submission command overwrite scheduling requirements and limits declared in the job script.&lt;/p&gt;
+
+&lt;p&gt;By default once the job completes its output will be saved in the home directory of the job owner as the &lt;code class=&quot;highlighter-rouge&quot;&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;job_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;.o&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;sequence_number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt; file, where &lt;code class=&quot;highlighter-rouge&quot;&gt;job_name&lt;/code&gt; is the name of the job and the &lt;code class=&quot;highlighter-rouge&quot;&gt;sequence_number&lt;/code&gt; is the job number assigned during the submission.&lt;/p&gt;
+
+&lt;p&gt;The current status of the job can be checked using the &lt;code class=&quot;highlighter-rouge&quot;&gt;qstat&lt;/code&gt; command:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;&amp;gt; &lt;/span&gt;qstat job-id
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If the command above does not print any output, the job has already finished or the job-id is not correct.&lt;/p&gt;
+
+&lt;p&gt;To learn more about Torque job management refer to the post &lt;a href=&quot;/torque-job-management.md&quot;&gt;the post&lt;/a&gt;.&lt;/p&gt;</content><author><name></name></author><summary type="html">Torque job scripts are developed in a Unix shell or a scripting language with a shell interpreter. Common examples of both approaches are Bash and Python respectively. This post will explain how to submit them to the Torque batch server and specify extra requirements that should be statisfied by the runtime environment eligible to run the job.</summary></entry><entry><title type="html">Job Management in Torque</title><link href="http://localhost:4000/linux/torque/2016/03/16/torque-job-management.html" rel="alternate" type="text/html" title="Job Management in Torque" /><published>2016-03-16T00:00:00+00:00</published><updated>2016-03-16T00:00:00+00:00</updated><id>http://localhost:4000/linux/torque/2016/03/16/torque-job-management</id><content type="html" xml:base="http://localhost:4000/linux/torque/2016/03/16/torque-job-management.html">&lt;p&gt;&lt;img src=&quot;/assets/images/dublin-zoo-rhinoceroses-832x468.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Suite of command line utilities for managing Torque jobs can be installed using the self-extracting script &lt;code class=&quot;highlighter-rouge&quot;&gt;torque-package-clients-linux-x86_64.sh&lt;/code&gt;. This post provides general overview of tools for querying, filtering and cancelling of Torque jobs available in the package.&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;h3 id=&quot;querying-and-filtering-jobs&quot;&gt;Querying and Filtering Jobs&lt;/h3&gt;
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;qstat&lt;/code&gt; is used to print the status of batch jobs.&lt;/p&gt;
+
+&lt;p&gt;By default a list of all jobs in the queue on the server is displayed:&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;&amp;gt; &lt;/span&gt;qstat queue-name@server
+
+Job ID                    Name             User            Time Use S Queue
+------------------------- ---------------- --------------- -------- - -----
+1.server.cluster.org      job.sh           vagrant                0 R batch
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If the queue-name and server are skipped the jobs in the default queue and on the default server will be presented.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;S&lt;/code&gt; column in the output contains the current status of a job. The list of all available states is presented in the table below.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Status&lt;/th&gt;
+      &lt;th&gt;Description&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;C&lt;/td&gt;
+      &lt;td&gt;Completed after having run&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;E&lt;/td&gt;
+      &lt;td&gt;Exiting after having run&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;H&lt;/td&gt;
+      &lt;td&gt;Held&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Q&lt;/td&gt;
+      &lt;td&gt;Queued, eligible to run or be routed&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;R&lt;/td&gt;
+      &lt;td&gt;Running&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;T&lt;/td&gt;
+      &lt;td&gt;Transfered to a new location&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;W&lt;/td&gt;
+      &lt;td&gt;Waiting for execution conditions to be satisfied&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;S&lt;/td&gt;
+      &lt;td&gt;Suspended&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Use the &lt;code class=&quot;highlighter-rouge&quot;&gt;-u&lt;/code&gt; option to limit output to jobs owned by the specified user. &lt;code class=&quot;highlighter-rouge&quot;&gt;$USER&lt;/code&gt; is the environment variable set to current user in the Bash shell.&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;&amp;gt; &lt;/span&gt;qstat -u &lt;span class=&quot;nv&quot;&gt;$USER&lt;/span&gt;
+
+server.cluster.org:
+                                                                                  Req&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;d       Req&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;d       Elap
+Job ID                  Username    Queue    Jobname          SessID  NDS   TSK   Memory      Time    S   Time
+----------------------- ----------- -------- ---------------- ------ ----- ------ --------- --------- - ---------
+1.server.cluster.org    vagrant     batch    test.sh            9038     1     24       --   00:10:00 C       --
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The columns of the table above contain the following information:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;the job identifier assigned by the batch server&lt;/li&gt;
+  &lt;li&gt;the job owner&lt;/li&gt;
+  &lt;li&gt;the queue in which the job currently resides&lt;/li&gt;
+  &lt;li&gt;the job name given by the submitter&lt;/li&gt;
+  &lt;li&gt;the session id if the job is running&lt;/li&gt;
+  &lt;li&gt;the number of nodes requested by the job&lt;/li&gt;
+  &lt;li&gt;the number of cpus or tasks requested by the job&lt;/li&gt;
+  &lt;li&gt;the amount of memory requested by the job&lt;/li&gt;
+  &lt;li&gt;either the cpu time, if specified, or wall time requested by the job, (hh:mm:ss)&lt;/li&gt;
+  &lt;li&gt;the jobs current state&lt;/li&gt;
+  &lt;li&gt;the amount of cpu time or wall time used by the job (hh:mm:ss)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;qstat&lt;/code&gt; output can be limited to a specified job or set of jobs and displayed in a more verbose manner.&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;&amp;gt; &lt;/span&gt;qstat -a first-job-id second-job-id
+
+server.cluster.org:
+                                                                                  Req&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;d       Req&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;d       Elap
+Job ID                  Username    Queue    Jobname          SessID  NDS   TSK   Memory      Time    S   Time
+----------------------- ----------- -------- ---------------- ------ ----- ------ --------- --------- - ---------
+1.server.cluster.org    vagrant     batch    test.sh            9091     1     24       --   00:10:00 C       --
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;&amp;gt; &lt;/span&gt;qstat -f 1.server.cluster.org
+Job Id: 1.server.cluster.org
+    Job_Name &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; test.sh
+    Job_Owner &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; vagrant@node1.cluster.org
+    resources_used.cput &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 00:00:00
+    resources_used.energy_used &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    resources_used.mem &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 780kb
+    resources_used.vmem &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0kb
+    resources_used.walltime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 00:00:00
+    job_state &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; C
+    queue &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; batch
+    server &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; server.cluster.org
+    Checkpoint &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; u
+    ctime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Sun Mar 19 17:39:12 2017
+    Error_Path &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; node1.cluster.org:/home/vagrant/test.sh.e25
+    exec_host &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; server.cluster.org/0
+    Hold_Types &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n
+    Join_Path &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n
+    Keep_Files &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; n
+    Mail_Points &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; a
+    mtime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Sun Mar 19 17:39:21 2017
+    Output_Path &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; node1.cluster.org:/home/vagrant/test.sh.o25
+    Priority &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    qtime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Sun Mar 19 17:39:12 2017
+    Rerunable &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; True
+    Resource_List.mppwidth &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 24
+    Resource_List.walltime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 00:10:00
+    Resource_List.mppnodect &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; -1
+    Resource_List.nodes &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    Resource_List.nodect &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    Resource_List.neednodes &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    session_id &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 9091
+    substate &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 59
+    Variable_List &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;PBS_O_QUEUE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;batch,PBS_O_HOME&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/home/vagrant,
+        &lt;span class=&quot;nv&quot;&gt;PBS_O_LOGNAME&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;vagrant,
+        &lt;span class=&quot;nv&quot;&gt;PBS_O_PATH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/usr/local/bin:/usr/local/sbin:/usr/local/sbin:/usr/local/
+        bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games,
+        &lt;span class=&quot;nv&quot;&gt;PBS_O_MAIL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/var/mail/vagrant,PBS_O_SHELL&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/bin/bash,
+        &lt;span class=&quot;nv&quot;&gt;PBS_O_LANG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;en_US.UTF-8,PBS_O_WORKDIR&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/home/vagrant,
+        &lt;span class=&quot;nv&quot;&gt;PBS_O_HOST&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;node1.cluster.org,PBS_O_SERVER&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;server
+    euser &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; vagrant
+    egroup &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; vagrant
+    hashname &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 25.server.cluster.org
+    queue_rank &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 2
+    queue_type &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; E
+    sched_hint &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Unable to copy files back - please see the mother superior&lt;span class=&quot;se&quot;&gt;\'&lt;/span&gt;s
+        log &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;exact details.
+    comment &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Job started on Sun Mar 19 at 17:39
+    etime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Sun Mar 19 17:39:12 2017
+    exit_status &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    submit_args &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; test.sh
+    start_time &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Sun Mar 19 17:39:12 2017
+    start_count &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    fault_tolerant &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; False
+    comp_time &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; Sun Mar 19 17:39:21 2017
+    job_radix &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    total_runtime &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 8.200034
+    submit_host &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; node1.cluster.org
+    init_work_dir &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; /home/vagrant
+    request_version &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    req_information.task_count.0 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    req_information.lprocs.0 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    req_information.thread_usage_policy.0 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; allowthreads
+    req_information.hostlist.0 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; server.cluster.org:ppn&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1
+    req_information.task_usage.0.task.0.cpu_list &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    req_information.task_usage.0.task.0.mem_list &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    req_information.task_usage.0.task.0.cores &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+    req_information.task_usage.0.task.0.threads &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+    req_information.task_usage.0.task.0.host &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; server.cluster.org
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;qstat&lt;/code&gt; can also be used to print information about the status of a batch server, queues and allocated nodes or display results in a different format. For the full list of supported comamnd line options check the &lt;a href=&quot;http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qstat.htm&quot;&gt;Administration guide&lt;/a&gt; or Linux man pages.&lt;/p&gt;
+
+&lt;h3 id=&quot;job-cancellation&quot;&gt;Job Cancellation&lt;/h3&gt;
+
+&lt;p&gt;Running and queued jobs are cancelled using the &lt;code class=&quot;highlighter-rouge&quot;&gt;qdel&lt;/code&gt; utility. Users allowed to perform this action on a job are its owner, the batch server operators and administrators.&lt;/p&gt;
+
+&lt;p&gt;If a job is already running a SIGTERM signal is sent the process to allow graceful finish. After a preconfigured delay a SIGKILL signal is sent. The time span between these two signals is a configuration parameter of the execution queue. It can also be specified in the request using &lt;code class=&quot;highlighter-rouge&quot;&gt;-W&lt;/code&gt; option, which takes precedence over the default value.&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;qdel job-id -m &lt;span class=&quot;s2&quot;&gt;&quot;message&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Cancel all jobs owned by the current user. If a job is running, send a SIGTERM signal and wait for 10 seconds before attempting to kill the process.&lt;/p&gt;
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;qdel all -W 10
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;For detailed explaination of flags supported by the &lt;code class=&quot;highlighter-rouge&quot;&gt;qdel&lt;/code&gt; refer to the &lt;a href=&quot;http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qdel.htm&quot;&gt;Administrator guide&lt;/a&gt; or Linux man pages.&lt;/p&gt;</content><author><name></name></author><summary type="html">Suite of command line utilities for managing Torque jobs can be installed using the self-extracting script torque-package-clients-linux-x86_64.sh. This post provides general overview of tools for querying, filtering and cancelling of Torque jobs available in the package.</summary></entry></feed>

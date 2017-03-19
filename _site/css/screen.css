@@ -1559,6 +1559,23 @@ a {
     margin-bottom: 1rem;
     font-weight: normal;
     color: #159957; }
+    .main-content h1 a,
+    .main-content h2 a,
+    .main-content h3 a,
+    .main-content h4 a,
+    .main-content h5 a,
+    .main-content h6 a {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      font-weight: normal;
+      color: #159957; }
+      .main-content h1 a:hover,
+      .main-content h2 a:hover,
+      .main-content h3 a:hover,
+      .main-content h4 a:hover,
+      .main-content h5 a:hover,
+      .main-content h6 a:hover {
+        color: #1e6bb8; }
   .main-content p {
     margin-bottom: 1em; }
   .main-content code {

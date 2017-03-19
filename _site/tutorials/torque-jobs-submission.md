@@ -35,3 +35,5 @@ Pass the full environment the job was submitted from
 ```
 
 http://docs.adaptivecomputing.com/torque/6-0-3/adminGuide/help.htm#topics/torque/2-jobs/requestingRes.htm%3FTocPath%3D3%2520Submitting%2520and%2520Managing%2520Jobs%7CJob%2520Submission%7C_____3
+
+http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qsub.htm%3FTocPath%3DAppendices%7CAppendix%2520A%253A%2520Commands%2520Overview%7C_____21

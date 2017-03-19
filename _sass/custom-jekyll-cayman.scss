@@ -161,6 +161,17 @@ a {
     margin-bottom: 1rem;
     font-weight: normal;
     color: $section-headings-color;
+
+    a {
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      font-weight: normal;
+      color: $section-headings-color;
+
+      &:hover {
+        color: $body_link_color;
+      }
+    }
   }
 
   p {

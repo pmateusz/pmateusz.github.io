@@ -1,1 +1,8 @@
-{% assign prefix = include.src | slice: 0, 2 %}{% assign protocol = include.src | slice: 0, 4 %}{% unless protocol == 'http' or prefix == "//" %}{{ site.baseurl }}{% endunless %}{{ include.src }}
+<p class="post-details">
+	{% for category in include.post.categories %}
+		<span class="blog-filter">
+			<a href="{{ site.baseurl }}/category/{{ category | slugify }}/">{{ category | capitalize }}</a>
+		</span>
+	{% endfor %}
+	<span class="post-date">{{ include.post.date | date: "%B %d, %Y" }}</span>
+</p>
