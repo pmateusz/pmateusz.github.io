@@ -1,0 +1,10 @@
+---
+layout: page
+---
+
+<h1>{{ page.title | capitalize }} archive</h1>
+<div class="text-container">
+    <ul class="blog-posts">
+        {% include list-posts.html posts=page.posts %}
+    </ul>
+</div>

@@ -1,0 +1,23 @@
+---
+title: Building Pyramids
+descritpion: Matt Polnik's blog
+layout: page
+---
+<h1>Latests posts</h1>
+<div class="text-container highlighter-rouge">
+	<ul class="blog-posts">
+		{% include list-posts.html posts=site.posts %}
+	</ul>
+	{% if paginator.total_pages > 1 %}
+		<!-- Pagination links -->
+		<div class="pagination">
+			{% if paginator.previous_page %}
+				<a href="{% include relative-src.html src=paginator.previous_page_path %}" class="previous btn">&larr; Newer posts</a>
+			{% endif %}
+			<span class="page_number ">{{ paginator.page }} of {{ paginator.total_pages }}</span>
+			{% if paginator.next_page %}
+				<a href="{% include relative-src.html src=paginator.next_page_path %}" class="next btn">Older posts &rarr;</a>
+			{% endif %}
+		</div>
+	{% endif %}
+</div>
