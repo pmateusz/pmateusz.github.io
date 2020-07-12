@@ -1,0 +1,27 @@
+wget -q https://dl.google.com/linux/linux_signing_key.pub -O- | sudo apt-key add -
+wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
+wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+
+git
+sudo
+vim
+sqlite3
+gcc
+make
+python
+ruby
+ruby-dev
+nodejs
+libxml2
+zlib
+zlib1g-dev
+g++
+gdb
+cmake
+python-pip
+pkg-config
+libpng12-dev
+libfreetype6-dev
+libblas-dev
+liblapack-dev
+gfortran

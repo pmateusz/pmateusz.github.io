@@ -1,0 +1,449 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Scalable and Cost Effective Linux Administration | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Scalable and Cost Effective Linux Administration" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Managing multiple machines without automation and tool support could be an annoying duty for a creative person. There are many ways to better spend time than to execute the same command on each machine. Nowadays, a professional system administrator should be able to build and manage networks of thousands computers. Even if a system administration is not your full-time job and the cluster to manage is two orders of magnitude smaller it is still worth to use your time effectively. Why not invest some time upfront and master a few key skills to better manage Linux machines in the future?" />
+<meta property="og:description" content="Managing multiple machines without automation and tool support could be an annoying duty for a creative person. There are many ways to better spend time than to execute the same command on each machine. Nowadays, a professional system administrator should be able to build and manage networks of thousands computers. Even if a system administration is not your full-time job and the cluster to manage is two orders of magnitude smaller it is still worth to use your time effectively. Why not invest some time upfront and master a few key skills to better manage Linux machines in the future?" />
+<link rel="canonical" href="http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html" />
+<meta property="og:url" content="http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-05-20T00:00:00+01:00" />
+<script type="application/ld+json">
+{"description":"Managing multiple machines without automation and tool support could be an annoying duty for a creative person. There are many ways to better spend time than to execute the same command on each machine. Nowadays, a professional system administrator should be able to build and manage networks of thousands computers. Even if a system administration is not your full-time job and the cluster to manage is two orders of magnitude smaller it is still worth to use your time effectively. Why not invest some time upfront and master a few key skills to better manage Linux machines in the future?","@type":"BlogPosting","headline":"Scalable and Cost Effective Linux Administration","dateModified":"2017-05-20T00:00:00+01:00","datePublished":"2017-05-20T00:00:00+01:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html"},"url":"http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Scalable and Cost Effective Linux Administration</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/linux/">Linux</a>
+		</span>
+	
+	<span class="post-date">May 20, 2017</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/remote_machine_administration-846db05dbd0f073ce044ac3f87e9e536759a6dc8ca9b4b629b2995ae2a7561f9.png" /></p>
+
+<p>Managing multiple machines without automation and tool support could be an annoying duty for a creative person. There are many ways to better spend time than to execute the same command on each machine. Nowadays, a professional system administrator should be able to build and manage networks of thousands computers. Even if a system administration is not your full-time job and the cluster to manage is two orders of magnitude smaller it is still worth to use your time effectively. Why not invest some time upfront and master a few key skills to better manage Linux machines in the future?</p>
+
+<p><!--more--></p>
+
+<p>This article aims to provide a collection of practices for cost effective and scalable administration of remote machines. Cost effective means that an operation will not require more human effort than absolutely necessary. For example, an administrator will still have to execute an <code class="highlighter-rouge">apt-get install</code> command to install a software package. However, this activity will be performed once regardless of the number of machines to manage, which moves us to the scalable part. Adding a new machine to a system will not increase administration effort if the system is working under normal conditions.</p>
+
+<h2 id="examples">Examples</h2>
+
+<p>Running examples presented in the article requires access to multiple machines with a custom network configuration. Fortunately, to accurately imitate conditions of managing a lab it is enough to set up a simple cluster of three virtual machines: master and two slaves. The master will be used to issue administration commands which will be then replicated automatically to slave nodes. There is no limit on the number of slave nodes, but two are enough to demonstrate the approach with no loss of generality.</p>
+
+<p>The cluster of virtual machines will be set up using Vagrant, a tool for configuring virtual machine environment in an automated fashion. Vagrant is independent of a virtual machine provider, such as <a href="https://www.virtualbox.org/">VirtualBox</a>, and the actual tool used to configure the machine, which referred to as the provisioner. To learn more about Vagrant I recommend starting with the <a href="https://www.vagrantup.com/intro/index.html">introduction</a> on the official project site. Examples below use Virtual Box and the shell provisioner, which is built into Vagrant.</p>
+
+<ol>
+  <li>
+    <p>Install VirtualBox.</p>
+
+    <p>Linux distributions often offer VirtualBox packages in their package repository. It is probably the easiest option to choose if you would like to automatically get access to future updates. However, before registering a new package source ensure it is dedicated for your version of the operating system. For example, if you are using Debian Jessie, the backport for Debian Wheezy may not work on your system.</p>
+
+    <p>For popular Linux distributions the safest solution is installing the Virtual Box package from the <a href="https://www.virtualbox.org/wiki/Downloads">official downloads page</a>. After successful download, install the package using the command below with the correct package name.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>dpkg <span class="nt">-i</span> virtualbox-5.1_5.1.22-115126-Debian-jessie_amd64.deb 
+</code></pre></div>    </div>
+
+    <p>Do not be discouraged by possible error messages printed by the package manager.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dpkg: error processing package virtualbox-5.1 <span class="o">(</span><span class="nt">--install</span><span class="o">)</span>:
+ dependency problems - leaving unconfigured
+</code></pre></div>    </div>
+    <p>Dependency problems can be easily resolved by running the command:</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install</span> <span class="nt">-f</span>
+</code></pre></div>    </div>
+
+    <p>If you would like try Virtual Box from a package source, search the official documentation of your Linux distribution on this subject or click direct links for <a href="https://wiki.debian.org/VirtualBox">Debian</a> and <a href="https://help.ubuntu.com/community/VirtualBox">Ubuntu</a> users.</p>
+  </li>
+  <li>
+    <p>Install Vagrant.</p>
+
+    <p>Commands below install the latest version of Vagrant as of writing this on Debian. Vagrant has very short release cycle, so it is strongly recommended to download the latest version from the <a href="https://www.vagrantup.com/downloads.html">official project downloads page</a>.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget https://releases.hashicorp.com/vagrant/1.9.4/vagrant_1.9.4_x86_64.deb
+<span class="nb">sudo </span>dpkg <span class="nt">-i</span> vagrant_1.9.4_x86_64.deb
+<span class="nb">sudo </span>apt-get <span class="nb">install</span> <span class="nt">-f</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Download Vagrant files for this article: <a href="/assets/vagrant/managing_remote_machines/master/Vagrantfile">master</a>, <a href="/assets/vagrant/managing_remote_machines/slave1/Vagrantfile">slave1</a> and <a href="/assets/vagrant/managing_remote_machines/slave2/Vagrantfile">slave2</a>. The virtual machines are provisioned to test examples with no extra configuration. Administration commands should be issued from the master node.</p>
+  </li>
+</ol>
+
+<h2 id="use-friendly-aliases-for-machines">Use friendly aliases for machines</h2>
+
+<p>Being easy for humans to remember was certainly not a priority for the Internet Protocol design committee. A group counting more than handful machines deserves its own, meaningful naming scheme. Furthermore, if hosts are distributed in different locations, it may also be useful to mention the physical location in a domain name.</p>
+
+<p>Come up with a naming scheme and register host names to the the <code class="highlighter-rouge">/etc/hosts</code> file. This change should be applied at least on the master node, where you issue administrator commands from.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>vim /etc/hosts
+</code></pre></div></div>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># /etc/hosts</span>
+127.0.0.1       localhost
+127.0.1.1       debian
+
+192.168.0.2     master.lab1 master
+192.168.0.3     slave1.lab1 slave1
+192.168.0.4     slave2.lab1 slave2
+
+<span class="c"># The following lines are desirable for IPv6 capable hosts</span>
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+</code></pre></div></div>
+
+<p>Now, you can use a hostname alias to connect to the selected machine.</p>
+
+<p>For consistency, you may decide to update the hostname on the target machine as well.</p>
+
+<p>Edit the <code class="highlighter-rouge">/etc/hostname</code> file to update the hostname.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>sh <span class="nt">-c</span> <span class="s1">'echo new-hostname &gt; /etc/hostname'</span>
+</code></pre></div></div>
+
+<p>Execute the <code class="highlighter-rouge">hostnamectl</code> command to update the hostname. The configuration change will become visible for system services. Rebooting the system has a similar effect.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>hostnamectl set-hostname new-hostname
+</code></pre></div></div>
+
+<h2 id="deploy-administrator-ssh-key-on-the-remote-machine">Deploy administrator SSH key on the remote machine</h2>
+
+<p>If you often work remotely on a specific host it may be useful to add your SSH key to the <code class="highlighter-rouge">~/.ssh/authorized_hosts</code> file on the remote machine. This way you will avoid being asked for a password before establishing a new SSH connection.</p>
+
+<p>Instead of editing the file directly, you could use the <code class="highlighter-rouge">ssh-copy-id</code> command as shown in the example below.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ssh-copy-id username@remote-host
+</code></pre></div></div>
+
+<p>If you do not own a SSH key it can be generated using the <code class="highlighter-rouge">ssh-keygen</code> command from the <code class="highlighter-rouge">openssl</code> package.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ssh-keygen <span class="nt">-t</span> rsa <span class="nt">-b</span> 4096 <span class="nt">-C</span> <span class="s2">"your_email_alias@domain.com"</span>
+</code></pre></div></div>
+
+<p>Finally, if you have not cut your teeth on SSH, I cannot tell how much I recommend reading <a href="http://www.unixwiz.net/techtips/ssh-agent-forwarding.html">An Illustrated Guide to SSH Agent Forwarding</a>. SSH is ubiquitous nowadays and understanding the protocol internals will help you avoid security pitfalls in the future.</p>
+
+<h2 id="use-parallel-ssh">Use parallel SSH</h2>
+
+<p>PSSH is a collection of parallel extensions to console utilities originally developed by the OpenSSH project. The tools are distributed in the <code class="highlighter-rouge">pssh</code> package available for download from official Debian and Ubuntu repositories. Names for the parallel versions of programs were created by adding <code class="highlighter-rouge">parallel-</code> prefix. For example <code class="highlighter-rouge">parallel-ssh</code> is the parallel version of the <code class="highlighter-rouge">ssh</code> client.</p>
+
+<p>The examples below are limited to <code class="highlighter-rouge">parallel-ssh</code> client. Unfortunately, comprehensive documentation is not the asset of this package. To learn more about the <code class="highlighter-rouge">pssh</code> project simply install the package and search its man pages or check out the <a href="http://code.google.com/p/parallel-ssh/">official project sources</a>.</p>
+
+<p>If you feel that the program name <code class="highlighter-rouge">parallel-ssh</code> is too long to conveniently type in terminal, consider registering its shorter alias such as <code class="highlighter-rouge">pssh</code> in your bash profile.</p>
+
+<p>First, check the absolute path to the program and add the alias to the <code class="highlighter-rouge">~/.bashrc</code> file.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>whereis parallel-ssh
+parallel-ssh: /usr/bin/parallel-ssh /usr/share/man/man1/parallel-ssh.1.gz
+</code></pre></div></div>
+
+<p>Debian and Ubuntu users may end up with the following line in the <code class="highlighter-rouge">~/.bashrc</code> file.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">alias </span><span class="nv">pssh</span><span class="o">=</span><span class="sb">`</span>/usr/bin/parallel-ssh<span class="sb">`</span>
+</code></pre></div></div>
+
+<p>Before letting the <code class="highlighter-rouge">parallel-ssh</code> shine define a text file with the list of hosts to target by your commands and save it as the <code class="highlighter-rouge">hosts.txt</code> file, which we refer to in the following examples, or whatever you find proper.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># hosts.txt</span>
+vagrant@slave1.example
+vagrant@slave2.example
+</code></pre></div></div>
+
+<p>For example, let’s check the machine uptime.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pssh <span class="nt">-h</span> hosts.txt <span class="nt">-i</span> <span class="nb">uptime</span>
+</code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">-i</code> switch instructs the pssh to display output from the processes executed on the target machines. If an exit code is sufficient, feel free to skip the switch.</p>
+
+<p>Finally, one may wonder how to execute commands that require user input. If a workflow on a target machine is fully interactive, which cannot be handled with an input stream pipe, it may not be the best candidate for parallel execution to start with. If the only obstacle that prevents making the workflow parallel is providing <code class="highlighter-rouge">sudo</code> password, it may be useful to waive this security mechanism for certain user accounts or commands. Waiving sudo password question was explained in <a href="/linux/2017/04/15/linux-productivity-tips.html">the post on productivity in Linux</a>.</p>
+
+<h2 id="setup-a-local-package-repository">Setup a local package repository</h2>
+
+<p>One of administration practices that greatly reduces the complexity of a network host management and prevents potential software-related problems from arising is ensuring that every machine stays updated and has consistent versions of software installed. Debian community takes responsibility for preparing and testing software packages hosted in public repositories. However, your organization may not have moved to the most recent Linux distribution or require software that lacks a voluntary package maintainer. A robust solution to this problem is setting up a local package repository that will contain packages that address special requirements of your organization.</p>
+
+<p>This section will present how to set up a local Advanced Packaging Tool (APT) repository hosted using the Apache HTTP server.</p>
+
+<p>Firstly, install the <code class="highlighter-rouge">apache2</code> and <code class="highlighter-rouge">dpkg-dev</code> packages on the machines that will be used to host the package repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>apache2 dpkg-dev
+</code></pre></div></div>
+
+<p>Create the <code class="highlighter-rouge">/var/www/deb/amd64</code> directory and copy there all packages that should compose the repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir</span> <span class="nt">-p</span> /var/www/deb/amd64
+</code></pre></div></div>
+
+<p>Build packages index files of the repository and save them compressed using the <code class="highlighter-rouge">gzip</code> algorithm.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /var/www/deb/
+dpkg-scanpackages amd64 | <span class="nb">gzip</span> <span class="nt">-9c</span> <span class="o">&gt;</span> amd64/Packages.gz
+</code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">dpkg-scanpackages</code> program may print errors or warnings, such as package duplication. Make sure you review the index files before release.</p>
+
+<p>Finally, update the list of package sources on the client machines.</p>
+
+<p>Open the <code class="highlighter-rouge">sources.list</code> file for edition.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>vim /etc/apt/sources.list
+</code></pre></div></div>
+
+<p>Register the package repository using the correct hostname.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># /etc/apt/sources.list</span>
+deb http://sever_hostname/deb/ amd64/
+</code></pre></div></div>
+
+<p>Packages available in the local repository should become visible after refreshing the <code class="highlighter-rouge">apt</code> configuration.
+<code class="highlighter-rouge">shellpackage manage
+sudo apt-get update
+</code></p>
+
+<h2 id="configure-a-cluster-management-system">Configure a cluster management system</h2>
+
+<p>If the main purpose of the machines is to serve as a computing cluster you may consider installing a dedicated cluster management system. For example, Torque is a robust, open source cluster management system used in many super computing centers around the world. Learning and configuring Torque for the first time would require a significant time commitment, but the effort should pay off long term. For more information on Torque you may refer to previous posts in this blog covering Torque <a href="/linux/torque/2017/03/25/torque-installation-on-ubuntu.html">installation</a>, <a href="/linux/torque/2017/03/16/torque-job-submission.html">job submission</a> and <a href="/linux/torque/2017/03/16/torque-job-management.html">management</a>.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/linux/2017/04/22/linux-usb-device-drivers.html">&laquo; Device Drivers Installation on Linux</a>
+			
+			
+				<a class="next" href="/linux/2017/06/30/linux-secure-apt-repository.html">Personal DEB Package Repository using GitHub Pages &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Scalable%20and%20Cost%20Effective%20Linux%20Administration&url=http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html&description=&title=Scalable%20and%20Cost%20Effective%20Linux%20Administration?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html&title=Scalable%20and%20Cost%20Effective%20Linux%20Administration&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/linux/2017/05/20/linux-managing-remote-machines.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

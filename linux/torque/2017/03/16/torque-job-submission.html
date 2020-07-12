@@ -1,0 +1,476 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Job Submission in Torque | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Job Submission in Torque" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Torque job scripts are developed in a Unix shell or a scripting language with a shell interpreter. Common examples of both approaches are Bash and Python respectively. This post will explain how to submit a Torque job to the batch server and specify extra requirements that should be satisfied by the runtime environment selected to run the job." />
+<meta property="og:description" content="Torque job scripts are developed in a Unix shell or a scripting language with a shell interpreter. Common examples of both approaches are Bash and Python respectively. This post will explain how to submit a Torque job to the batch server and specify extra requirements that should be satisfied by the runtime environment selected to run the job." />
+<link rel="canonical" href="http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html" />
+<meta property="og:url" content="http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-03-16T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"Torque job scripts are developed in a Unix shell or a scripting language with a shell interpreter. Common examples of both approaches are Bash and Python respectively. This post will explain how to submit a Torque job to the batch server and specify extra requirements that should be satisfied by the runtime environment selected to run the job.","@type":"BlogPosting","headline":"Job Submission in Torque","dateModified":"2017-03-16T00:00:00+00:00","datePublished":"2017-03-16T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html"},"url":"http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Job Submission in Torque</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/linux/">Linux</a>
+		</span>
+	
+		<span class="blog-filter">
+			<a href="/category/torque/">Torque</a>
+		</span>
+	
+	<span class="post-date">March 16, 2017</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/job_submission_torque-6e237910f4ec27bc48ec27212e50bbc512d239d7956f08bdb1566fb97198cc85.png" /></p>
+
+<p>Torque job scripts are developed in a Unix shell or a scripting language with a shell interpreter. Common examples of both approaches are Bash and Python respectively. This post will explain how to submit a Torque job to the batch server
+and specify extra requirements that should be satisfied by the runtime environment selected to run the job.</p>
+
+<!--more-->
+
+<h3 id="script-template">Script Template</h3>
+
+<p>The following template can be used to develop Torque jobs scripts:</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<span class="c">#PBS -l nodes=1:ppn=4</span>
+<span class="c">#PBS -l mem=2gb</span>
+<span class="c">#PBS -l walltime=00:10:00</span>
+<span class="c">#PBS -N matlab_job</span>
+<span class="c">#PBS -j oe</span>
+<span class="c">#PBS -M user@hostname</span>
+<span class="c">#PBS -m abe</span>
+
+<span class="nb">date</span>
+</code></pre></div></div>
+
+<p>The script ought to be interpreted by the Bash shell ran on a single CPU with 4 cores. The total virtual memory allocated by the process will not exceed 2 GB. The process is expected to complete within 10 minutes. The job name is <code class="highlighter-rouge">matlab_job</code>. Standard output and standard error output streams should be concatenated and saved in the submission directory as the <code class="highlighter-rouge">matlab_jobo{sequence_number}</code> file, where the sequence_number will be assigned by the batch server after the submission. An email will be sent to <code class="highlighter-rouge">user@hostname</code> as soon as the job begins, runs to completion or is aborted. The script will print date and time on the standard output of the computing node and exit.</p>
+
+<p>In the previous example we saw how Torque options can be used to specify job allocation requirements and limits for the scheduling process. By the rule of thumb the scheduler will try to find the worst computing node that satisfies all scheduling requirements and limits. The tighter the constraints are the longer the job is expected to be kept waiting in the queue.</p>
+
+<p>Overview of the popular scheduling options is available in the table below. For the complete list refer the the <a href="http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qsub.htm">Administrator guide</a>.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Option</th>
+      <th>Example</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-a <code class="highlighter-rouge">date_time</code></td>
+      <td>-a 1130</td>
+      <td>The <code class="highlighter-rouge">date_time</code> argument is in the format <code class="highlighter-rouge">[[[[CC]YY]MM]DD]hhmm[.SS]</code> where <code class="highlighter-rouge">CC</code> is the first two digits of the year (the century), remaining symbols are self-describing. If a job is submitted after the requested start time, it will be scheduled for the following day.</td>
+    </tr>
+    <tr>
+      <td>-l <code class="highlighter-rouge">resource_list</code></td>
+      <td>-l nodes=2:ppn=8</td>
+      <td>Defines resources that are required by the job or establishes a limit to the amount of resource that can be consumed. If limit is not specified it is generally considered as infinite. Limits are described in detail in the next section.</td>
+    </tr>
+    <tr>
+      <td>-q <code class="highlighter-rouge">queue</code></td>
+      <td>-q batch</td>
+      <td>Submit the job to a specific queue.</td>
+    </tr>
+    <tr>
+      <td>-N <code class="highlighter-rouge">jobname</code></td>
+      <td>-N $USER_JOB</td>
+      <td>Give the job a name. The default is the filename of the job script.</td>
+    </tr>
+    <tr>
+      <td>-j action</td>
+      <td>-j oe</td>
+      <td>Declares if the standard error stream of the job will be merged with the standard output stream of the job.</td>
+    </tr>
+    <tr>
+      <td>-p priority</td>
+      <td>-p 0</td>
+      <td>Set job priority. The priority is a number between -1024 and +1023. A higher number means higher priority. The default priority is 0.</td>
+    </tr>
+    <tr>
+      <td>-M <code class="highlighter-rouge">email_address</code></td>
+      <td>-M user@email</td>
+      <td>Send an email to address  when certain events occur. By default an email is sent only if the job is killed by the batch system.</td>
+    </tr>
+    <tr>
+      <td>-m <code class="highlighter-rouge">[a][b][e]</code></td>
+      <td>-m abe</td>
+      <td>Send an email when the job begins, ends and/or is aborted.</td>
+    </tr>
+    <tr>
+      <td>-P	<code class="highlighter-rouge">user[:group]</code></td>
+      <td>-P vagrant</td>
+      <td>Allows a root user or manager to submit a job as another user. Torque treats proxy jobs as though the jobs were submitted by the supplied username.</td>
+    </tr>
+    <tr>
+      <td>-v <code class="highlighter-rouge">variable_list</code></td>
+      <td>-v VAR1,VAR2=”some value”</td>
+      <td>Pass variables to the job, either with a specific value or from the submitting environment.</td>
+    </tr>
+    <tr>
+      <td>-F</td>
+      <td>-F “arg1 arg2=arg2value”</td>
+      <td>Specifies the arguments that will be passed to the job script when the script is launched.</td>
+    </tr>
+    <tr>
+      <td>-d path</td>
+      <td> </td>
+      <td>Defines the working directory path to be used for the job. If the -d option is not specified, the default working directory is the home directory.</td>
+    </tr>
+    <tr>
+      <td>-o <code class="highlighter-rouge">stdout_path</code></td>
+      <td> </td>
+      <td>Defines the path to be used for the standard output stream of the batch job. The path argument is of the form: <code class="highlighter-rouge">[hostname:]path_name</code> where hostname is the name of a host to which the file will be returned, and <code class="highlighter-rouge">path_name</code> is the path name on that host.</td>
+    </tr>
+    <tr>
+      <td>-e <code class="highlighter-rouge">stderr_path</code></td>
+      <td> </td>
+      <td>The same as above for the standard error.</td>
+    </tr>
+    <tr>
+      <td>-X</td>
+      <td> </td>
+      <td>Enable X11 forwarding</td>
+    </tr>
+    <tr>
+      <td>-V</td>
+      <td> </td>
+      <td>Pass the full environment the job was submitted from</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="resource-limits">Resource Limits</h3>
+
+<p>Resource limits are used to express temporal, hardware and software constraints that the scheduling process
+should take take into account before assigning a job to a computing node.</p>
+
+<p>The resource limits are descrived using the following syntax:</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<span class="c">#PBS -l resource_list</span>
+<span class="c">#PBS -l nodes=2:ppn=8:cpuclock=conservative</span>
+<span class="c">#PBS -l walltime=10:30</span>
+<span class="c">#PBS -l mem=4gb</span>
+<span class="c">#PBS -l feature=matlab</span>
+</code></pre></div></div>
+
+<p>If a limit is not specified it is generally considered as infinite.</p>
+
+<p>Popular resource limits are explained in the table below. For the complete list of available limits refer to the <a href="http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/2-jobs/requestingRes.htm">Administrator guide</a>.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Examle</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>walltime=walltime</td>
+      <td>walltime=10:30</td>
+      <td>Maximum wallclock time the job will need. Default is 1 hour. Walltime is specified in seconds or as hh:mm:ss.</td>
+    </tr>
+    <tr>
+      <td>mem=memory</td>
+      <td>mem=2gb</td>
+      <td>Total amount of virtual memory that the job will allocate. Default value depends on a queue</td>
+    </tr>
+    <tr>
+      <td>nodes=num:ppn=num</td>
+      <td>nodes=1:ppn=4</td>
+      <td>Number of nodes and number of processors per node required. Default is 1 node and 1 processor per node. By the rule of thumb, if you are not sure how many nodes to request, it should be 1.</td>
+    </tr>
+    <tr>
+      <td>cpluclock=governor-policy-name</td>
+      <td>cpuclock=ondemand</td>
+      <td>CPU may be running at a less-than-maximum frequency in order to conserve power. Available governor policies are: performance, powersave, ondemand, conservative. Read more about <a href="https://wiki.debian.org/HowTo/CpuFrequencyScaling">CPU frequency scaling</a>.</td>
+    </tr>
+    <tr>
+      <td>feature=feature_name</td>
+      <td>feature=matlab</td>
+      <td>Request a specific Torque node property. There is no established standard for the list of features. Contact your IT department for more information.</td>
+    </tr>
+    <tr>
+      <td>host=hostname</td>
+      <td>host=node1.torque.org</td>
+      <td>Name of the host on which the job should be run.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="developing-advanced-scripts">Developing Advanced Scripts</h3>
+<p>Complex scripts may require access to information about runtime environment and properties of the job. Torque runner exports basic parameters as environment variables: <code class="highlighter-rouge">PBS_JOBID</code>, <code class="highlighter-rouge">PBS_O_WORKDIR</code>, <code class="highlighter-rouge">PBS_SERVER</code>, etc. For the complete list of environment variables refer to the <a href="http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qsub.htm">Administrator guide</a>.</p>
+
+<h3 id="script-submission">Script Submission</h3>
+<p>The script can be submitted to the Torque batch server using the <code class="highlighter-rouge">qsub</code> command line utility. The program is distributed as the <code class="highlighter-rouge">torque-package-clients-linux-x86_64.sh</code> self-extracting script.</p>
+
+<p>The command below submits a job request to execute the <code class="highlighter-rouge">script.sh</code> to the Torque batch server.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qsub script.sh
+
+<span class="c"># Output:</span>
+job-id
+</code></pre></div></div>
+
+<p>The output contains the id assigned to the job by the batch server. Extra options passed to the submission command overwrite scheduling requirements and limits declared in the job script.</p>
+
+<p>By default once the job completes its output will be saved in the directory used for submission as the <code class="highlighter-rouge">{job_name}.o{sequence_number}</code> file, where <code class="highlighter-rouge">job_name</code> is the name of the job and the <code class="highlighter-rouge">sequence_number</code> is the job number assigned during the submission.</p>
+
+<p>The current status of the job can be checked using the <code class="highlighter-rouge">qstat</code> command:</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qstat job-id
+</code></pre></div></div>
+
+<p>If the command above does not print any output, the job has already finished or the job-id is incorrect.</p>
+
+<p>To learn more about Torque job management refer to <a href="/linux/torque/2017/03/16/torque-job-management.html">the post</a>.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/linux/torque/2017/03/16/torque-job-management.html">&laquo; Job Management in Torque</a>
+			
+			
+				<a class="next" href="/linux/torque/2017/03/25/torque-installation-on-ubuntu.html">Troque Installation on Ubuntu &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Job%20Submission%20in%20Torque&url=http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html&description=&title=Job%20Submission%20in%20Torque?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html&title=Job%20Submission%20in%20Torque&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/linux/torque/2017/03/16/torque-job-submission.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

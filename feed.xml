@@ -1,0 +1,2133 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.7">Jekyll</generator><link href="https://pmateusz.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://pmateusz.github.io/" rel="alternate" type="text/html" /><updated>2020-07-12T21:57:20+01:00</updated><id>https://pmateusz.github.io/feed.xml</id><title type="html">Building Pyramids</title><subtitle>Matt Polnik's blog</subtitle><entry><title type="html">MiniZinc Installation on Debian</title><link href="https://pmateusz.github.io/linux/2018/11/11/minizinc-installation-on-debian.html" rel="alternate" type="text/html" title="MiniZinc Installation on Debian" /><published>2018-11-11T00:00:00+00:00</published><updated>2018-11-11T00:00:00+00:00</updated><id>https://pmateusz.github.io/linux/2018/11/11/minizinc-installation-on-debian</id><content type="html" xml:base="https://pmateusz.github.io/linux/2018/11/11/minizinc-installation-on-debian.html">{% asset minizinc-installation alt:'MiniZinc Installation' %}
+
+MiniZinc is a platform for developing Constraint Programming models and solving discrete optimization problems. In this post, we describe the MiniZinc installation on Debian Stretch. Despite the targeted operating system, steps presented below should be easily portable to other Linux distributions.
+
+&lt;!--more--&gt;
+
+# Introduction
+
+MiniZinc is distributed using a bundle that contains a compiler, a development environment, and the [Gecode solver](https://www.gecode.org/). The bundle can be downloaded from the [official project website](https://www.minizinc.org/software.html)or [the permanent](https://github.com/MiniZinc/MiniZincIDE/releases/latest) link that always points to the latest release of the bundle.
+
+Unfortunately, the precompiled Gecode solver binaries from the bundle do not work on Linux distributions that come with the version of the Qt framework older than 5.9. For example, an attempt to run MiniZinc on Debian Stretch ends prematurely with the runtime failure.
+
+```shell
+minizinc --solver Gecode /vagrant/test_model.mzn /vagrant/test_data.dzn 
+/opt/minizinc/2.2.3/MiniZincIDE-2.2.3-bundle-linux/bin/fzn-gecode: error while loading shared libraries: libQt5PrintSupport.so.5: cannot open shared object file: No such file or directory
+=====ERROR=====
+```
+
+An inspection of libraries required by the fzn-gecode executable narrows down the problem to a single issue: `version 'Qt_5.9' not found`.
+
+```shell
+ldd /opt/minizinc/2.2.3/MiniZincIDE-2.2.3-bundle-linux/bin/fzn-gecode
+/opt/minizinc/2.2.3/MiniZincIDE-2.2.3-bundle-linux/bin/fzn-gecode: /usr/lib/x86_64-linux-gnu/libQt5Core.so.5: version 'Qt_5.9' not found (required by /opt/minizinc/2.2.3/MiniZincIDE-2.2.3-bundle-linux/bin/fzn-gecode)
+	linux-vdso.so.1 (0x00007ffd907f1000)
+	libQt5PrintSupport.so.5 =&gt; not found
+	libQt5Widgets.so.5 =&gt; /usr/lib/x86_64-linux-gnu/libQt5Widgets.so.5 (0x00007fb453aa3000)
+	libQt5Gui.so.5 =&gt; /usr/lib/x86_64-linux-gnu/libQt5Gui.so.5 (0x00007fb45356a000)
+	libQt5Core.so.5 =&gt; /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 (0x00007fb45309b000)
+    ...
+```
+
+We should not install a new version of Qt and replace the default version available in our system to avoid library conflicts with other Qt applications that have been already installed. Instead, we build the Gecode solver using the older Qt library and overwrite the Gecode solver binaries in the MiniZinc bundle. The steps below show a complete installation process of MiniZinc on Debian Stretch. For modifying filesystem outside our home directory and installation of the Gecode build-time dependencies, we need &quot;sudo&quot; permissions.
+
+# Tutorial
+
+1. Download and install the MiniZinc bundle for Linux. The following commands install the MiniZinc bundle in the /opt/minizinc/2.2.3 directory.
+```shell
+wget https://github.com/MiniZinc/MiniZincIDE/releases/download/2.2.3/MiniZincIDE-2.2.3-bundle-linux-x86_64.tgz
+sudo mkdir -p /opt/minizinc/2.2.3
+sudo tar -xf MiniZincIDE-2.2.3-bundle-linux-x86_64.tgz -C /opt/minizinc/2.2.3
+rm MiniZincIDE-2.2.3-bundle-linux-x86_64.tgz
+```
+
+1. Create a symbolic link to the minizinc executable.
+```shell
+sudo ln -s /opt/minizinc/2.2.3/MiniZincIDE-2.2.3-bundle-linux/bin/minizinc /bin/minizinc
+```
+
+1. Checkpoint. Print the version of the minizinc library.
+```shell
+vagrant@stretch:~$ minizinc --version
+```
+You should see similar output.
+```shell
+MiniZinc to FlatZinc converter, version 2.2.3, build 34907429
+Copyright (C) 2014-2018 Monash University, NICTA, Data61
+```
+
+1. Install dependencies required for the Gecode solver compilation.
+```shell
+sudo apt-get --yes install g++-6 cmake qt5-qmake qtbase5-dev qtbase5-dev qtdeclarative5-dev qt5-default
+```
+
+1. Download, compile and install the Gecode solver. The following commands download the latest version of the Gecode solver, as of writing this post, compile the project using default settings, and install it in the /opt/gecode-6.1.0 directory.
+```shell
+wget --quiet https://github.com/Gecode/gecode/archive/release-6.1.0.tar.gz
+tar -xf release-6.1.0.tar.gz
+rm release-6.1.0.tar.gz
+cd gecode-release-6.1.0 &amp;&amp; ./configure --prefix=/opt/gecode-6.1.0 --enable-gist &amp;&amp; make -j 4 &amp;&amp; sudo make install
+```
+
+1. Create a symbolic link to the fzn-gecode executable.
+```shell
+cd /usr/bin &amp;&amp; sudo ln -s /opt/gecode-6.1.0/bin/fzn-gecode fzn-gecode
+```
+
+1. Add the Gecode shared libraries to the linker. This step is required for the fzn-gecode program that loads the Gecode shared libraries at runtime.
+```shell
+echo '/opt/gecode-6.1.0/lib' | sudo tee /etc/ld.so.conf.d/gecode.conf &amp;&amp; sudo ldconfig
+```
+
+1. Remove the fzn-gecode executable from the MiniZinc bundle.
+```shell
+cd /opt/MiniZincIDE-2.2.3-bundle-linux/bin/ &amp;&amp; sudo rm fzn-gecode 
+```
+
+1. Checkpoint. Test the installation by solving a simple optimization problem.
+   1. Create the test_model.mzn file with the following content.
+```minizinc
+enum Item;
+int: weight_limit;
+array[Item] of int: value;
+array[Item] of int: copies;
+array[Item] of int: weight;
+array[Item] of var int: selected_copies;
+var int: total_value;
+% test to ensure that the constraint library works
+include &quot;globals.mzn&quot;;
+constraint forall(i in Item) (selected_copies[i] &gt;= 0 /\ selected_copies[i] &lt;= copies[i]);
+constraint sum([selected_copies[i] * weight[i] | i in Item]) &lt;= weight_limit;
+constraint total_value = sum([selected_copies[i] * value[i] | i in Item]);
+solve maximize total_value;
+output [&quot;knapsack = \(selected_copies);\n&quot;, &quot;total_value = \(total_value);&quot;];
+```
+   1. Create a data sample and save it as the test_data.dzn file.
+```
+Item = {Mask, Relievo, Soldier, Plate};
+value = [13, 7, 1, 10];
+weight = [7, 3, 2, 5];
+copies = [1, 1, 3, 2];
+```
+   1. Solve the optimization problem using the Gecode solver.
+```shell
+minizinc --solver Gecode /vagrant/test_model.mzn /vagrant/test_data.dzn 
+```
+   1. You should see the following output.
+```
+knapsack = [0, 0, 0, 2];
+total_value = 20;
+----------
+==========
+```
+The bar `==========` means that the last printed solution has been proven optimal.
+
+# Conclusion
+
+This post demonstrated a general technique for dealing with missing shared libraries in Linux. We used the **ldd** command to list the missing shared libraries of a given executable. In case of Qt, rather than installing the missing version of the library which would lead to conflict with other software packages, we built the Gecode solver from sources and linked it against the Qt platform for our operating system. For convenience, we created symbolic links to run the **minizinc** and **fzn-gecode** utilities from a command line without specifying their exact location. Finally, we registered the shared libraries of Gecode by creating the **/etc/ld.so.conf.d/gecode.conf** file and reloaded the linker configuration. To confirm that Minizinc has been installed correctly, we compiled and solved a simple optimization problem.
+
+Overall, the MiniZinc platform, installed in this post, is an attractive technology for modeling and solving discrete optimization problems. It was developed for fast prototyping several models for solving a problem and testing them on different solvers. I strongly recommend MiniZinc to anyone who works with discrete optimization problems. I found it very helpful especially in making informative decisions which variant of a model to implement in the native solver technology. In my personal opinion the best way to learn MiniZinc is taking the Coursera courses: [Basic Modeling for Discrete Optimization](https://www.coursera.org/learn/basic-modeling), [Advanced Modeling for Discrete Optimization](https://www.coursera.org/learn/advanced-modeling), and [Solving Algorithms for Discrete Optimization](https://www.coursera.org/learn/solving-algorithms-discrete-optimization). First few classes of the first course should already give you intuition what the MiniZinc is and whether it may be helpful to you.</content><author><name></name></author><summary type="html">MiniZinc is a platform for developing Constraint Programming models and solving discrete optimization problems. In this post, we describe the MiniZinc installation on Debian Stretch. Despite the targeted operating system, steps presented below should be easily portable to other Linux distributions.</summary></entry><entry><title type="html">CMake Project with Third-party Dependencies</title><link href="https://pmateusz.github.io/c++/cmake/2018/03/11/cmake-project-setup.html" rel="alternate" type="text/html" title="CMake Project with Third-party Dependencies" /><published>2018-03-11T00:00:00+00:00</published><updated>2018-03-11T00:00:00+00:00</updated><id>https://pmateusz.github.io/c++/cmake/2018/03/11/cmake-project-setup</id><content type="html" xml:base="https://pmateusz.github.io/c++/cmake/2018/03/11/cmake-project-setup.html">{% asset cmake_clion_integration alt:'CMake project setup' %}
+
+Setting up a build for a new software project requires foresight and experience. Decisions made at this step influence compilation time and effort needed to configure a development machine. Having in mind that there is no replacement for practice, this article aims at providing a baseline configuration for other a C or C++ projects that will be built using CMake. The post targets persons who did not cut their teeth on CMake and consider it as the build tool in their own project.
+
+&lt;!--more--&gt;
+
+## Introduction
+
+[CMake](https://cmake.org/) is a cross platform and open source tool for building C/C++ projects. CMake works by generating a collection of make files based on the project definition contained in the `CMakeLists.txt` file. The project definition is expressed using a domain specific language that CMake interprets. Apart from traditional constructs offered in any programming language, such as assignment instruction, control flow statements, loops or function definition, CMake supports an extensive list of predefined functions. They serve two major purposes: hiding platform specific aspects of a build definition and simplifying common tasks that are often required to build a project. Examples of both could be file system operations and finding libraries. Make files generated by CMake are then processed by the `make` tool to build a project.
+
+In the following sections we present a basic CMake build configuration for a C/C++ project that depends on third-party libraries. As the use case we will create CMake files to build a program that uses the SCIP Optimization Suite, a collection of libraries for solving constraint integer optimization problems. The exact application of the program itself is not relevant in our context, though the list of engineering tasks we are going to solve is a good representation of what you may face in setting up a build configuration for any C or C++ project yourself. For simplicity we assume that all required dependencies are installed in the system. If this assumption does not hold, we expect CMake to fail with a meaningful error message. Although it is possible to develop a CMake configuration that will download missing dependencies, we will not cover this subject here to maintain the introductory level of the post. If you would like to learn more on that, we refer you to the [ExternalProject_Add](https://cmake.org/cmake/help/v3.11/module/ExternalProject.html) function in the official CMake documentation.
+
+The CMake configuration that will be developed in this tutorial is available at [GitHub](https://github.com/pmateusz/examples/tree/master/cmake_sample_project). You may either follow the tutorial below step by step or download the sample code upfront. The following command will download all files created in this tutorial and save them into the **scip-example** directory.
+
+```shell
+svn export https://github.com/pmateusz/examples/trunk/cmake_sample_project scip-example
+```
+
+This tutorial was created using Debian Stretch. If you use a different operating system you may need to modify commands that install packages and their names in the prerequisites section.
+
+## Prerequisites
+1. Install CMake, g++ and external libraries required by SCIP.
+   ```shell
+sudo apt-get install --assume-yes bison build-essential cmake flex g++ libgmp-dev libreadline-dev libncurses-dev zlib1g-dev
+```
+
+1. Download and install SCIP.
+   ```shell
+wget http://scip.zib.de/download/release/SCIPOptSuite-5.0.1-Linux.deb
+sudo dpkg --install SCIPOptSuite-5.0.1-Linux.deb
+```
+
+## Tutorial
+1. Create a directory for the project and open it in a command prompt.
+   ```shell
+mkdir scip-example &amp;&amp; cd scip-example
+```
+
+1. Create subdirectories for the source code and CMake modules.
+   ```shell
+mkdir src
+mkdir -p cmake/Modules
+```
+
+   Source code and header files will be located in the `src` directory. CMake modules, which are responsible for finding third-party libraries, will be stored in the `cmake/Modules` directory.
+
+1. Download the project source code from [GitHub](https://github.com/pmateusz/examples/tree/master/cmake_sample_project/src).
+
+   ```shell
+for file in cmain.c relax_lp.c relax_lp.h relax_nlp.c relax_nlp.h
+do
+wget https://raw.githubusercontent.com/pmateusz/examples/master/cmake_sample_project/src/$file -P src
+done
+```
+
+1. Create the `CMakeLists.txt` file with the following content.
+
+   ```cmake
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+project(demo LANGUAGES C CXX VERSION 0.0.1)
+set(CMAKE_VERBOSE_MAKEFILE FALSE)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_C_FLAGS_DEBUG &quot;-g -ggdb -pg -fsanitize=undefined&quot;)
+    set(CMAKE_C_FLAGS_RELEASE &quot;-O2&quot;)
+    set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+endif ()
+set(CMAKE_BUILD_TYPE RELEASE)
+list(APPEND CMAKE_MODULE_PATH &quot;${CMAKE_SOURCE_DIR}/cmake/Modules/&quot;)
+find_package(Scip REQUIRED)
+find_package(Threads REQUIRED)
+get_filename_component(HEADERS src REALPATH)
+include_directories(${HEADERS} ${SCIP_INCLUDE_DIRS})
+file(GLOB_RECURSE SOURCES src/*.c)
+add_library(demo STATIC ${SOURCES})
+add_executable(demo-main src/cmain.c)
+target_link_libraries(demo-main demo ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(demo-main demo)
+```
+
+   ### Comments
+   We will now review the file line by line and highlight important concepts.
+
+   ```cmake
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+project(demo LANGUAGES C CXX VERSION 0.0.1)
+set(CMAKE_VERBOSE_MAKEFILE FALSE)
+```
+
+   Require CMake in version 3.1 or newer.
+   Define a project called **demo** that requires C and C++ compilers. Project deliverables will have version 0.0.1.
+   Generate non verbose make files. If you change the parameter to TRUE, make files will print the current command before its execution, which could be priceless while troubleshooting build related issues.
+
+   ```cmake
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+```
+
+   Generate make files that compile source code with C++11 standard enabled in a compiler. In case of `g++` that boils down to adding the `-std=c++11` flag to the compiler arguments. The same technique will not work with MSVC. Always be mindful about possible cross platform issues that hard coding parameters may cause. To avoid them use CMake features whenever possible.
+
+   Code produced by a compiler should be position independent, so the shared libraries built in the project will execute correctly regardless of the memory location where they have been loaded to.
+
+   ```cmake
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_C_FLAGS_DEBUG &quot;-g -ggdb -pg -fsanitize=undefined&quot;)
+    set(CMAKE_C_FLAGS_RELEASE &quot;-O2&quot;)
+    set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+endif ()
+set(CMAKE_BUILD_TYPE RELEASE)
+```
+
+   We set extra compiler flags that should be used when compiling the project. Files with the `.c` extension will use the C compiler, while files with `.cxx` or `.cpp` extensions will be compiled by the C++ compiler.
+
+   The build target is set to `RELEASE`, so the `-O2` flag, which as of this writing is the recommended optimization level for `GCC`, will be used. If you change the build type to `DEBUG` flags `-g -ggdb -pg -fsanitize=undefined` will be passed instead. Debug symbols will be added, extra debugging information will be produced to improve debugging experience in `GDB`, extra tracing instructions for `gprof` will be produced to enable profiling the code. Finally, additional checks will be run to detect situations which lead to undefined behaviors, such as null pointer dereference or arithmetic overflows. To read more about undefined behavior sanitizer see the [Red Hat blog post](https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan/) or [Clang](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html) documentation.
+
+   Notice that these flags are passed only for the `GNU GCC` compiler, which protects us from running into cross platform issues.
+
+   ```cmake
+list(APPEND CMAKE_MODULE_PATH &quot;${CMAKE_SOURCE_DIR}/cmake/Modules/&quot;)
+```
+
+   Instruct CMake where to find additional scripts that find third-party libraries. These scripts are also known as modules and will be developed in the upcoming sections.
+
+   ```cmake
+find_package(Scip REQUIRED)
+find_package(Threads REQUIRED)
+```
+
+   Look for the `Scip` library and the system threading model. In case any of the dependencies is not satisfied stop generating make files and fail with an error. While searching for a library CMake first tries to load a `FindLibraryName.cmake` file, where `LibraryName` is the name of a library passed in the `find_package` function, and then interprets its content. Regardless of the operating system library names in CMake are case sensitive. If in doubt double check that you are using a library name in the correct form.
+
+   The CMake scripts interpreted by the `find_package` function export new variables that point to the library binaries and header files. By convention the path to a symbolic object or an archive is stored in the`LIBRARYNAME_LIB` variable, where `LIBRARYNAME` is the name of the library in capital letters. For example, `find_package(Scip REQUIRED)` should create a variable `SCIP_LIB` with a binary file of the library. Header file location is saved in the variable `LIBRARYNAME_INCLUDE_DIR`. Unfortunately, the naming convention for CMake modules is not strictly followed, even inside the CMake project, so before reusing any official module consider reading its `documentation`(https://cmake.org/cmake/help/latest/manual/cmake-modules.7.html).
+
+   ```cmake
+get_filename_component(HEADERS src REALPATH)
+include_directories(${HEADERS} ${SCIP_INCLUDE_DIRS})
+```
+
+   Resolve a relative path to the `src` directory to an absolute path and save it as the value of the `HEADERS` variable. Then declare header files' locations. Apart from the local header files, we also declare the header files of the SCIP library and its dependencies saved in the `SCIP_INCLUDE_DIRS` variable.
+
+   You may notice that values of CMake variables are referenced using the `${...}` operator.
+
+   ```cmake
+file(GLOB_RECURSE SOURCES src/*.c)
+add_library(demo STATIC ${SOURCES})
+```
+
+   Set paths to all local source code files as the value of the `SOURCES` variable and create a statically linked library with them. Notice that the first argument in the `add_library` function, which corresponds to a library name, matches the project name. It will be the default build target of the project.
+
+   ```cmake
+add_executable(demo-main src/cmain.c)
+target_link_libraries(demo-main demo ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(demo-main demo)
+```
+
+   Declare another project target to build an executable from the `src/cmain.c` file. The executable will be linked against the project sources, the SCIP library, its dependencies and the threading model.
+
+   A prerequisite for successful linking of the `demo-main` target is availability of the local library build in the `demo` target. This dependency is declared using the `add_dependencies` function.
+
+1. Develop a CMake modules for the [Termcap](https://www.gnu.org/software/termutils/manual/termcap-1.3/termcap.html) library and the [GNU Multiple Precision Library](https://gmplib.org/).
+
+   Create the `FindTermcap.cmake` file in the `cmake/Modules` directory with the following content.
+
+   ```cmake
+find_path(TERMCAP_INCLUDE_DIR termcap.h)
+find_library(TERMCAP_LIBRARY termcap)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(TERMCAP DEFAULT_MSG TERMCAP_LIBRARY TERMCAP_INCLUDE_DIR)
+```
+
+   ### Comments
+   CMake modules of these libraries will be developed first, because their structure is simple and similar to each other. We will reduce complexity of CMake modules to bare minimum, since you are unlikely to compile these libraries yourself. Both libraries have their official packages available for most Unix-like operating systems. Moreover the first versions of each library was released in 90', so their API is mature and codebase stable.
+
+   ```cmake
+find_path(TERMCAP_INCLUDE_DIR termcap.h)
+```
+
+   Search for the `termcap.h` header file using the `find_path` function that assigns the absolute path to the directory containing the file name to the first variable passed to the function. Note that we rely on CMake to check common header files' locations in the operating system by not passing any suggested directories. This behavior should work well as soon as header files can be found in one of common locations.
+
+   ```cmake
+find_library(TERMCAP_LIBRARY termcap)
+```
+   
+   Find a library with the `termcap` stem. CMake will not have problems with detecting that libtermcap.a or libtermcap.so are an archive and a shared object of the Termcap library respectively. This capability is built into CMake, because library prefixes and their file extensions depend on the operating system. By default if both an archive and a shared object are available, CMake will prefer the shared object.
+
+   ```cmake
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(TERMCAP DEFAULT_MSG TERMCAP_LIBRARY TERMCAP_INCLUDE_DIR)
+```
+
+   Import the `FindPackageHandleStandardArgs` module. This module contains the `find_package_handle_standard_args` function, which should be called with variables denoting the package name, a failure message and variables that should be returned to the caller. The `DEFAULT_MSG` parameter means that the default failure message format will be used if required.
+
+   We skip the `FindGMP.cmake` module, because its structure strictly follows the `FindTermcap.cmake` module.
+
+   Both modules developed in this section can be downloaded using the command.
+
+   ```shell
+for file in FindTermcap.cmake FindGMP.cmake
+do
+wget https://raw.githubusercontent.com/pmateusz/examples/master/cmake_sample_project/cmake/Modules/$file -P cmake/Modules
+done
+```
+
+1. Create the `FindReadline.cmake` file in the `cmake/Modules` directory with the following content.
+
+   ```cmake
+find_path(READLINE_INCLUDE_DIR readline/readline.h)
+find_library(_READLINE_LIB readline)
+if (NOT _READLINE_LIB)
+    message(FATAL_ERROR &quot;Not found libreadline.a&quot;)
+endif ()
+find_library(_HISTORY_LIB history)
+if (NOT _HISTORY_LIB)
+    message(FATAL_ERROR &quot;Not found libhistory.a&quot;)
+endif ()
+set(READLINE_LIBRARY ${_READLINE_LIB})
+list(APPEND READLINE_LIBRARY ${_HISTORY_LIB})
+mark_as_advanced(_READLINE_LIB _HISTORY_LIB)
+find_package(Curses REQUIRED)
+find_package(Termcap REQUIRED)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(READLINE DEFAULT_MSG READLINE_LIBRARY READLINE_INCLUDE_DIR)
+if (READLINE_FOUND)
+    set(READLINE_LIBRARIES ${READLINE_LIBRARY})
+    list(APPEND READLINE_LIBRARIES ${CURSES_LIBRARIES})
+    list(APPEND READLINE_LIBRARIES ${TERMCAP_LIBRARY})
+    set(READLINE_INCLUDE_DIRS ${READLINE_INCLUDE_DIR} ${CURSES_INCLUDE_DIR} ${TERMCAP_INCLUDE_DIR})
+endif ()
+```
+
+   ### Comments
+   The Readline library also has an official package with its binaries. Albeit, its CMake module is more complex. Readlines is distributed as 2 files: `readline` and `history`, which further depend on libraries: Curses and Termcap.
+
+   Handling a library that is distributed via multiple binary files is a three step process. Firstly, find a file path to every file or fail if it cannot be found. Then create a variable that contains a list of all file paths separated by semicolon. Note that the `list` function facilitates handling such variables. Finally, mark the temporary variables used to find the binary files as advanced variables. That will instruct third-party tools that offer CMake integration that these variables are helper variables, which should remain hidden and unavailable for an external assignment.
+
+   Find the library dependencies. Export their binaries and header files using extra variables: `READLINE_LIBRARIES` and `READLINE_INCLUDE_DIRS` respectively.
+
+1. Create the `FindSoplex.cmake` file in the `cmake/Modules` directory with the following content.
+
+   ```cmake
+if (SOPLEX_ROOT_DIR)
+    set(_SOPLEX_INCLUDE_LOCATIONS &quot; ${SOPLEX_ROOT_DIR}&quot;)
+    set(_SOPLEX_LIB_LOCATIONS &quot;${SOPLEX_ROOT_DIR}&quot;)
+else ()
+    set(SOPLEX_ROOT_DIR &quot;&quot; CACHE PATH &quot;Folder contains Soplex library&quot;)
+    set(_SOPLEX_INCLUDE_LOCATIONS &quot;&quot;)
+    set(_SOPLEX_LIB_LOCATIONS &quot;&quot;)
+endif ()
+find_path(SOPLEX_INCLUDE_DIR soplex.h HINTS ${_SOPLEX_INCLUDE_LOCATIONS} PATH_SUFFIXES src)
+find_library(SOPLEX_LIBRARY soplex HINTS ${_SOPLEX_LIB_LOCATIONS} PATH_SUFFIXES lib)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(SOPLEX DEFAULT_MSG SOPLEX_LIBRARY SOPLEX_INCLUDE_DIR)
+mark_as_advanced(_SOPLEX_INCLUDE_LOCATIONS _SOPLEX_LIB_LOCATIONS)
+```
+
+   Soplex is an example of a library that does not have an official installation package. In prerequisites of this tutorial we downloaded a package with this library from a third-party source. However, we might as well compile the library from sources and install it in a custom location. To retain such flexibility define an optional `SOPLEX_ROOT_DIR` variable which, if assigned, will point to the root directory of the Soplex project. This location is passed to `find_path` and `find_library` functions as the `HINTS` parameter. It has a priority over other paths that CMake may otherwise search to find a file or a binary. Note that we also use the `PATH_SUFFIXES` parameter to pass information about subdirectories of the main location where a file or a library could be found. For example, the Soplex project stores source files in the `src` subdirectory, which is in turn is used as the path suffix in the `find_path` function. 
+
+   Other structures have been explained already in the previous steps.
+
+1. Create the `FindScip.cmake` file in the `cmake/Modules` directory with the following content.
+
+   ```cmake
+if (SCIP_ROOT_DIR)
+    set(_SCIP_INCLUDE_LOCATIONS &quot;${SCIP_ROOT_DIR}&quot;)
+    set(_SCIP_LIB_LOCATIONS &quot;${SCIP_ROOT_DIR}&quot;)
+else ()
+    set(SCIP_ROOT_DIR &quot;&quot; CACHE PATH &quot;Folder contains SCIP library&quot;)
+    set(_SCIP_INCLUDE_LOCATIONS &quot;&quot;)
+    set(_SCIP_LIB_LOCATIONS &quot;&quot;)
+endif ()
+find_path(SCIP_INCLUDE_DIR scip/scip.h HINTS ${_SCIP_INCLUDE_LOCATIONS} PATH_SUFFIXES src)
+find_library(SCIP_LIBRARY scip HINTS ${_SCIP_LIB_LOCATIONS} PATH_SUFFIXES lib lib/static)
+find_package(ZLIB REQUIRED)
+find_package(Readline REQUIRED)
+find_package(Soplex REQUIRED)
+find_package(Gmp REQUIRED)
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(SCIP DEFAULT_MSG SCIP_LIBRARY SCIP_INCLUDE_DIR)
+if (SCIP_FOUND)
+    set(SCIP_LIBRARIES ${SCIP_LIBRARY})
+    list(APPEND SCIP_LIBRARIES ${SOPLEX_LIBRARY})
+    list(APPEND SCIP_LIBRARIES ${GMP_LIBRARY})
+    list(APPEND SCIP_LIBRARIES ${READLINE_LIBRARIES})
+    list(APPEND SCIP_LIBRARIES ${ZLIB_LIBRARY})
+    set(SCIP_INCLUDE_DIRS ${SCIP_INCLUDE_DIR}
+            ${GMP_INCLUDE_DIR}
+            ${SOPLEX_INCLUDE_DIR}
+            ${READLINE_INCLUDE_DIR}
+            ${ZLIB_INCLUDE_DIR})
+endif ()
+```
+
+   All constructs used to develop the file have been already explained in the previous examples.
+
+1. Finally, generate the make files and build the project. To maintain separation between source files and build products we output the make files and perform the build in the `build` directory.
+
+   ```shell
+mkdir build &amp;&amp; cd build
+cmake ..
+-- The C compiler identification is GNU 6.3.0
+-- The CXX compiler identification is GNU 6.3.0
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compilershell: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.a (found version &quot;1.2.8&quot;) 
+-- Found Curses: /usr/lib/x86_64-linux-gnu/libcurses.a  
+-- Found TERMCAP: /usr/lib/x86_64-linux-gnu/libtermcap.a  
+-- Found READLINE: /usr/lib/x86_64-linux-gnu/libreadline.a;/usr/lib/x86_64-linux-gnu/libhistory.a  
+-- Found SOPLEX: /home/pmateusz/Applications/scipoptsuite-5.0.1/soplex/lib/libsoplex.a  
+-- Found GMP: /usr/lib/x86_64-linux-gnu/libgmp.a  
+-- Found SCIP: /home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libscip.a;/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libobjscip.a;/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libtpinone.a;/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/liblpispx2.a;/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libnlpi.cppad.a  
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Looking for pthread_create
+-- Looking for pthread_create - not found
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not foundrque Job Management Cover Image
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - found
+-- Found Threads: TRUE  
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/pmateusz/dev/cmake_sample_project/build
+```
+
+   ```shell
+make
+Scanning dependencies of target demo
+[ 16%] Building C object CMakeFiles/demo.dir/src/cmain.c.o
+[ 33%] Building C object CMakeFiles/demo.dir/src/relax_lp.c.o
+[ 50%] Building C object CMakeFiles/demo.dir/src/relax_nlp.c.o
+[ 66%] Linking CXX static library libdemo.a
+[ 66%] Built target demo
+Scanning dependencies of target demo-main
+[ 83%] Building C object CMakeFiles/demo-main.dir/src/cmain.c.o
+[100%] Linking CXX executable demo-main
+[100%] Built target demo-main
+```
+
+## Summary
+
+In this post we reviewed a list of CMake functions that are necessary to setup a build of a project that depends on third-party libraries. We then explained the process of finding dependencies by CMake and implemented example modules. The first module handled a library that does not have external dependencies and can be installed using a package downloaded from the official repository. We then switched to more complex scenarios: a library distributed using multiple binaries, a library with third party dependencies and a library built locally whose project root directory should have priority over other locations.
+
+Overall, the material covered here should be sufficient to start development of a new project, but it is definitely not all what CMake has to offer. We mention the most important features below to help you avoid reinventing the wheel. The post is concluded with reference materials on CMake for self-study.
+
+CMake is distributed with additional tools that bundled together form a comprehensive toolbox for building, testing and distributing software. [CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html) is a test runner independent of a testing framework used to develop the tests. Furthermore, CTest configuration is recognized by software development environments, such as CLion or Visual Studio, which allow to run and debug tests within an editor.
+
+[CPack](https://cmake.org/cmake/help/latest/manual/cpack.1.html) is a generic purpose packaging tool that can create compressed archives or packages with project binaries. CPack supports DEB and RPM package formats, which jointly cover majority of UNIX-like systems.
+
+Apart from finding installed dependencies CMake can automatically download and compile third-party libraries needed to build a project. This feature comes in handy every time a library does not have an installation package available on your system or the package has not been released for the particular version of the library you would like to use. You may consider incorporating this step into build configuration by means of [ExternalProject_Add](https://cmake.org/cmake/help/latest/module/ExternalProject.html). That upfront investment should pay off and save your time later if you are going to develop the project within a community or use an external continuous integration system.
+
+Finding a high quality learning material on CMake for an entry level person can be difficult, because the official documentation assumes that you are already familiar with the tool. Personally, I ended up reviewing repositories of large open source projects and reading how others solved problems I was going to address. A repository of a deep learning framework [Caffe](https://github.com/BVLC/caffe) turned out to be very useful to me with this respect. For best practices on writing CMake modules I referred to the [official CMake repository](https://gitlab.kitware.com/cmake/cmake) which contains modules for the most popular libraries, such as  [Google Protocol Buffers](https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/FindProtobuf.cmake), [libxml2](https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/FindLibXml2.cmake) or [ZLIB](https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/FindZLIB.cmake) to name a few.</content><author><name></name></author><summary type="html">Setting up a build for a new software project requires foresight and experience. Decisions made at this step influence compilation time and effort needed to configure a development machine. Having in mind that there is no replacement for practice, this article aims at providing a baseline configuration for other a C or C++ projects that will be built using CMake. The post targets persons who did not cut their teeth on CMake and consider it as the build tool in their own project.</summary></entry><entry><title type="html">Visual Studio Code as Latex Editor</title><link href="https://pmateusz.github.io/latex/2018/01/30/vs-code-latex-editor.html" rel="alternate" type="text/html" title="Visual Studio Code as Latex Editor" /><published>2018-01-30T00:00:00+00:00</published><updated>2018-01-30T00:00:00+00:00</updated><id>https://pmateusz.github.io/latex/2018/01/30/vs-code-latex-editor</id><content type="html" xml:base="https://pmateusz.github.io/latex/2018/01/30/vs-code-latex-editor.html">{% asset visual_studio_code_latex_update alt:'Visual Studio Latex Editor Cover Image' %}
+
+This article provides instructions how to setup Visual Studio Code for writing and editing Latex documents. Our [previous article]({% post_url 2017-03-29-vs-code-latex-editor %}) on this subject became obsolete due to recent changes in the editor and its plugins. This post aims to provide the most accurate and up to date configuration. Repeating steps of the tutorial should deliver a robust working environment for Latex with syntax highlight, spell checking and live document preview. The post is concluded by feature comparison between Visual Studio Code and Overleaf. &lt;!--The extended version of the post contains suggestions for more advanced usage, such as tracking changes with Git and document navigation with bookmarks that should be helpful when editing larger documents.--&gt;
+
+&lt;!--more--&gt;
+
+## Introduction
+
+[Visual Studio Code](https://code.visualstudio.com/) is a general purpose text editor. Although it can be used to edit any plain text file it shines when working with source code. Its feature set has been selected to offer fast navigation and responsive editing experience in large text files. The editor does not offer out of the box capabilities that one is unlikely to use. Features for a targeted audience are available through extensions. They often belong to one of categories: integration with third-party tools, linters and editor enhancements.
+
+In this tutorial we cover the editor configuration and the most useful extensions for Latex. As of this writing each referenced extension was installed more than 300000 times. Thus they were comprehensively tested and proved their utility in practice.
+
+Even though the article was written using Debian 9.3 (stretch), the instructions from the tutorial should work without any changes on other operating systems, except for the installation of the bare Visual Studio Code editor.
+
+## Prerequisites
+
+We assume that the programs to build a Latex document and a bibliography from the `.tex` and `.bib` files respectively are installed on your machine.
+
+```shell
+pdftex --version
+bibtex --version
+```
+
+Otherwise, install relevant software packages for your operating system. Debian/Ubuntu users can accomplish this by installing the `texlive` package.
+
+```shell
+sudo apt-get install texlive 
+```
+
+## Tutorial
+
+1. Download and install Visual Studio Code.
+
+   The commands below will download and install the latest stable version of the editor on Debian/Ubuntu. If you are using a different operating system or want to install an insider distribution see [the project website](https://code.visualstudio.com/) for relevant instructions.
+
+   ```shell
+    wget -Ovscode.deb https://vscode-update.azurewebsites.net/latest/linux-deb-x64/stable
+    sudo dpkg --install vscode.deb
+    sudo apt-get install --force
+```
+
+   The last command `sudo apt-get install --force` downloads and installs all required dependency packages that are currently not installed in the system. Although not strictly necessary in our case it is a good practice to run this command after manual installation of `.deb` packages. After successful installation the editor can be launched using the `code` command.
+
+   ```shell
+   code --version
+```
+ 
+   You do not need to worry about future updates of Visual Studio Code. During the installation the package repository was added to the list of repositories of Advanced Package Tool (apt).
+  
+   ```shell
+   cat /etc/apt/sources.list.d/vscode.list 
+   
+   &gt; deb https://packages.microsoft.com/repos/vscode stable main
+```
+
+1. Install extensions.
+
+    Execute the following commands.
+
+    ```shell
+    code --install-extension James-Yu.latex-workshop
+    code --install-extension streetsidesoftware.code-spell-checker
+```
+    The same can be accomplished using the *Extensions* toolbar in the editor. To open the toolbar click *View* in the application menu and then select *Extensions*.
+
+    The [Latex Workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop) extension offers comprehensive set of features for development of `.tex` documents. The most important ones are syntax highlight, error reporting and document preview. The full list of supported actions can be listed using the the `Ctrl+Alt+L` keystroke combination. For brevity we are not going to cover all of them here, but we strongly recommend you to try them yourself. For example, the citation browser enables adding references without the need to open and browse the bibliography. The word count is useful for writing abstracts with word limits. Finally, the cleanup of auxiliary files removes all intermediate files created during the Latex and Bibtex compilation.
+    
+    The [Code Spell Checker](https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker) extension does no more than its title suggests.
+
+1. Open the directory of your Latex project in Visual Studio Code.
+
+   ```shell
+   mkdir latex_project &amp;&amp; code latex_project
+```
+
+1. Create Visual Studio Code tasks for building `.tex` and `.bib` documents.
+
+   Make `.vscode` directory in the root directory of your Latex project.
+
+   Create `tasks.json` file inside the `.vscode` directory with the following content.
+
+   ```shell
+{
+    &quot;version&quot;: &quot;2.0.0&quot;,
+    &quot;tasks&quot;: [
+          {
+            &quot;label&quot;: &quot;Run pdflatex&quot;,
+            &quot;type&quot;: &quot;shell&quot;,
+            &quot;group&quot;: {
+                &quot;kind&quot;: &quot;build&quot;,
+                &quot;isDefault&quot;: true
+            },
+            &quot;command&quot;: &quot;pdflatex&quot;,
+            &quot;args&quot;: [
+                &quot;-interaction=nonstopmode&quot;,
+                &quot;-file-line-error&quot;,
+                &quot;*.tex&quot;
+            ]
+        },
+        {
+            &quot;label&quot;: &quot;Run bibtex&quot;,
+            &quot;type&quot;: &quot;shell&quot;,
+            &quot;group&quot;: {
+                &quot;kind&quot;: &quot;test&quot;,
+                &quot;isDefault&quot;: true
+            },
+            &quot;command&quot;: &quot;bibtex&quot;,
+            &quot;args&quot;: [
+                &quot;-terse&quot;,
+                &quot;*.aux&quot;
+            ]
+        }      
+    ]
+}
+```
+
+   The configuration file defines two tasks: `Run pdflatex` and `Run bibtex`. They correspond to the commands `pdflatex -interaction=nonstopmode -file-line-error *.tex` and `bibtex -terse *.aux` respectively. The first command is set as the default build task and can be run using the `Ctrl+Shift+B` keystroke combination. The other command is set as the default test. Unfortunately, no keystroke is bound to this action by default. If you compile a bibliography often we suggest to bind the task to the `Ctrl+Shift+T` keystroke combination or any other you may prefer.
+
+   In order to bind an action to a keystroke open the *Keyboard Shortcuts* tab using the `Ctrl+K Ctrl+S` keystroke combination. Alternatively, in the application menu click *File*, *Preferences* and *Keyboard Shortcuts*. The *Keyboard Shortcuts* tab should be opened. Search for the *Run Test Task* (workbench.action.tasks.test) label and set up the keystroke of your choice.
+
+   Besides a keystroke combination Visual Studio Code allows to execute a task using the *Task* button in the application menu or via the task prompt that can be opened using the `Ctrl+Shift+P` keystroke combination.
+
+1. Set up a spell checker.
+
+   Create the `cSpell.json` file inside the `.vscode` directory with the following content.
+
+   ```shell
+{
+ &quot;version&quot;: &quot;0.1&quot;,
+ &quot;language&quot;: &quot;en&quot;,
+ &quot;dictionaryDefinitions&quot;: [
+     { &quot;name&quot;: &quot;projectDictionary&quot;, &quot;path&quot;: &quot;./dictionary.txt&quot;}
+ ],
+ &quot;dictionaries&quot;: [&quot;projectDictionary&quot;],
+ &quot;languageSettings&quot;: [
+     { &quot;languageId&quot;: &quot;*&quot;, &quot;dictionaries&quot;: [&quot;projectDictionary&quot;] }
+ ],
+ &quot;ignoreRegExpList&quot;: [
+    &quot;\\\\cite{[A-Za-z0-9, -]+}&quot;,
+    &quot;\\\\begin{\\w+}&quot;,
+    &quot;\\\\end{\\w+}&quot;,
+    &quot;\\\\usepackage{\\w+}&quot;,
+    &quot;\\\\bibliographystyle{\\w+}&quot;,
+    &quot;\\\\hyphenation{[A-Za-z0-9, -]+}&quot;,
+    &quot;\\w+{?&quot;]
+}
+```
+
+    The configuration instructs the Code Spell Checker to use a default English dictionary extended by a custom list of words loaded from the `dictionary.txt` file. Spelling errors will not be reported for Latex commands and text in-between curly brackets of the shortlisted commands.
+
+    Create an empty `dictionary.txt` file in the `.vscode` directory. It should contain words that are not recognized by the spell checker. An example of the valid file format, a list of words separated by a newline character, is provided below.
+
+    ```shell
+aforementioned
+combinatorial
+decremental
+forementioned
+polytope
+pseudocode
+scalability
+superset
+subproblem
+```
+
+1. Alter editor settings for better work with text files.
+
+   Create the `settings.json` file with the following content.
+
+   ```shell
+{  
+  &quot;cSpell.enabled&quot;: true,
+  &quot;editor.cursorBlinking&quot;: &quot;solid&quot;,
+  &quot;editor.wordWrap&quot;: &quot;on&quot;,
+  &quot;editor.wordWrapColumn&quot;: 80,
+  &quot;editor.wrappingIndent&quot;: &quot;same&quot;,
+  &quot;latex-workshop.debug.showUpdateMessage&quot;: false,
+  &quot;telemetry.enableCrashReporter&quot;: false,
+  &quot;telemetry.enableTelemetry&quot;: false
+}
+```
+
+   Most of configuration settings above, though difficult to know off the top of one's head, are self explanatory. The reason for disabling a blinking cursor is the anecdotal evidence that a solid cursor is less distracting and causes less eye fatigue problems. Word wrapping is enabled to get rid of the horizontal scroll bar.
+
+1. Optionally, hide the activity bar.
+
+   Click *View* in the application menu and then the *Hide Activity Bar* button. While working with Latex we do not switch between the *Explorer* and *Debugger* panels, so the space occupied by the *Activity Bar* can freed for the document viewport.
+
+## Other Environments for Latex
+
+It is worth to compare and contrast the working environment developed in this post with competitors. This will make us knowledgeable of other possible options and help avoiding bias while deciding what works best for us.
+
+In our view the most important alternative to the setup we presented is [Overleaf](https://www.overleaf.com/). A web application for creating and editing Latex documents. For quick overview check the list of most important features advertised at [the company website](https://www.overleaf.com/benefits). Overall, we believe that comparing any web application and its desktop companion is like comparing apples to oranges. The first one does not require installation and enables real-time collaboration. On the other hand, the desktop variant can work offline providing simultaneously more responsive and less distracting environment. In a nutshell the same holds between Overleaf and Visual Studio Code.
+
+In our opinion the Overleaf is superior when one works with colleagues and wants to enforce that everyone uses the most recent version of a document to avoid conflict resolution. Secondly, Overleaf has effortless setup. One does not need to install anything Latex specific on a personal computer, so may enjoy an easier start in this environment. However, the free version has restrictions that may hinder productivity. It constrains a project structure, limits the number of files, does not allow to track changes and restore previous revisions of the document. For any larger work that benefits from no distractions, such as writing theses, we strongly recommend Visual Studio Code in conjunction with git for tracking changes.
+
+## Conclusion
+
+If you reached this point you should be set to work with Latex documents. We believe there is few more tips on the subject that would suit everybody. In case you spot an error or know something on the subject you would like to share, you are more than welcome to leave a comment or join the discussion below.</content><author><name></name></author><summary type="html">This article provides instructions how to setup Visual Studio Code for writing and editing Latex documents. Our previous article on this subject became obsolete due to recent changes in the editor and its plugins. This post aims to provide the most accurate and up to date configuration. Repeating steps of the tutorial should deliver a robust working environment for Latex with syntax highlight, spell checking and live document preview. The post is concluded by feature comparison between Visual Studio Code and Overleaf.</summary></entry><entry><title type="html">Personal DEB Package Repository using GitHub Pages</title><link href="https://pmateusz.github.io/linux/2017/06/30/linux-secure-apt-repository.html" rel="alternate" type="text/html" title="Personal DEB Package Repository using GitHub Pages" /><published>2017-06-30T00:00:00+01:00</published><updated>2017-06-30T00:00:00+01:00</updated><id>https://pmateusz.github.io/linux/2017/06/30/linux-secure-apt-repository</id><content type="html" xml:base="https://pmateusz.github.io/linux/2017/06/30/linux-secure-apt-repository.html">{% asset package_content_linux alt:'List DEB package metadata' %}
+
+&lt;!-- TODO: github pages links are incorrect --&gt;
+&lt;!-- TODO: -- gets replaced by --&gt;
+&lt;!-- TODO: no info how to activate pages --&gt;
+
+Keeping a project build in a manageable time range is an important prerequisite for an efficient software development workflow. The more complex projects are the more time, automation effort and tools required to develop and maintain an efficient build pipeline. Regardless of a scale and type of a project the core principle of avoiding unnecessary work is worth applying.
+
+This tutorial presents an approach to simplify a build process by creating a package of a third-party software component upfront and hosting it in an external package repository. It is an alternative to building a component from sources on a development or continuous integration machine.
+
+ &lt;!--more--&gt;
+
+In the example presented below the Google Operation Research Tools library is compiled on a clean virtual machine and then packaged by the DEB CPack Package Generator. The process is automated using Vagrant. Then, a local Debian package repository is setup to host the package created in the previous step. Finally, the package repository is made public by uploading it to GitHub and hosting using GitHub Pages.
+
+Although the tutorial is built around a specific example, the overall approach and selected tools are generic. In particular, CPack offers a unified interface for creating packages that supports the most popular formats including ZIP, DEB and RPM.
+
+# Create a DEB package
+
+There is not a single established way to create DEB packages. This section demonstrate DEB CPack Package Generator which should be suitable for building packages for internal use, especially if you are already familiar with CMake or it is used as the project build tool. If you aspire to applying for hosting the package in the official Debian/Ubuntu repositories refer to the [Debian New Maintainers' Guide](https://www.debian.org/doc/manuals/maint-guide/). That document explains a complex process of packaging that allows for applying custom patches and more flexibility.
+
+CPack is the package generator used by CMake. Apart from DEB and RPM popular in Linux community, CPack supports also cross platform formats such as ZIP. CPack is integrated with CMake build process in the similar vein as packaging plugins with Maven. Package generation is executed after compilation and tests. By default one package is created for a build project.
+
+Package configuration is typically described in a single text file that contains a list of GLOB patterns capturing files and directories to be distributed with the package. Furthermore, a specific package output format may impose extra requirements on information that should be included. For example, the DEB package format requires metadata such as package version, processor architecture and maintainer.
+
+The listing below contains a CPack configuration for the Google Operational Research Tools library.
+
+```shell
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+project(or_tools_package LANGUAGES CXX VERSION 6.0)
+
+include(./Utils.cmake)
+
+m_get_filepath(OR_TOOLS_DIR ~/dev/or-tools REALPATH)
+m_get_filepath(OR_TOOLS_DEP_INSTALL_DIR ${OR_TOOLS_DIR}/dependencies/install REALPATH)
+
+add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package)
+
+# Dependencies
+
+# Protobuf = 3.3.0
+m_check_filepath(${OR_TOOLS_DEP_INSTALL_DIR}/include/google/protobuf/api.pb.h)
+m_check_filepath(${OR_TOOLS_DEP_INSTALL_DIR}/lib/libprotobuf.a)
+m_check_filepath(${OR_TOOLS_DEP_INSTALL_DIR}/bin/protoc)
+
+install(DIRECTORY ${OR_TOOLS_DEP_INSTALL_DIR}/include/google/ DESTINATION include/google)
+
+install(DIRECTORY ${OR_TOOLS_DEP_INSTALL_DIR}/lib/ DESTINATION lib
+  FILES_MATCHING PATTERN &quot;libproto*&quot;
+                 PATTERN &quot;cmake&quot; EXCLUDE
+                 PATTERN &quot;pkgconfig&quot; EXCLUDE)
+
+install(FILES ${OR_TOOLS_DEP_INSTALL_DIR}/bin/protoc DESTINATION bin)
+
+# gflags = 2.2.0
+# Glog = 0.3.5
+# cbc = 2.9.8
+# CoinUtils = 2.10.13
+# Osi = 0.107.8
+# Clp = 1.16.10
+# Cgl = 0.59.9
+# ...
+
+# OR Tools 6.0
+m_check_filepath(${OR_TOOLS_DIR}/lib/libcvrptw_lib.so )
+m_check_filepath(${OR_TOOLS_DIR}/lib/libdimacs.so)
+m_check_filepath(${OR_TOOLS_DIR}/lib/libfap.so)
+m_check_filepath(${OR_TOOLS_DIR}/lib/libortools.so)
+m_check_filepath(${OR_TOOLS_DIR}/ortools/linear_solver/linear_solver.h)
+m_check_filepath(${OR_TOOLS_DIR}/ortools/gen/ortools/linear_solver/linear_solver.pb.h)
+
+install(DIRECTORY ${OR_TOOLS_DIR}/lib/ DESTINATION lib
+  FILES_MATCHING PATTERN &quot;lib*&quot;)
+
+foreach (dir algorithms base bop constraint_solver flatzinc glop graph linear_solver lp_data sat util)
+  install(DIRECTORY ${OR_TOOLS_DIR}/ortools/${dir} DESTINATION include/ortools FILES_MATCHING PATTERN &quot;*.h&quot;)
+  install(DIRECTORY ${OR_TOOLS_DIR}/ortools/gen/ortools/${dir} DESTINATION include/ortools FILES_MATCHING PATTERN &quot;*.h&quot;)
+endforeach ()
+
+if(EXISTS &quot;${CMAKE_ROOT}/Modules/CPack.cmake&quot;)
+  include(InstallRequiredSystemLibraries)
+
+  set(CPACK_SET_DESTDIR &quot;on&quot;)
+  set(CPACK_PACKAGING_INSTALL_PREFIX &quot;/tmp&quot;)
+
+  set(CPACK_PACKAGE_NAME &quot;or-tools&quot;)
+  set(CPACK_PACKAGE_VENDOR &quot;google&quot;)
+  set(CPACK_PACKAGE_CONTACT &quot;mateusz.polnik at strath.ac.uk&quot;)
+  set(CPACK_PACKAGE_DESCRIPTION &quot;Google Optimization Tools&quot;)
+  set(CPACK_PACKAGE_DESCRIPTION_SUMMARY ${CPACK_PACKAGE_DESCRIPTION})
+
+  set(CPACK_RESOURCE_FILE_LICENSE ${OR_TOOLS_DIR}/LICENSE-2.0.txt)
+  set(CPACK_RESOURCE_FILE_README ${OR_TOOLS_DIR}/README)
+  set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+
+  if(UNIX)
+    list(APPEND CPACK_GENERATOR &quot;DEB&quot;)
+
+    m_get_architecture(_OS_ARCH)
+    mark_as_advanced(_OS_ARCH)
+
+    set(CPACK_DEBIAN_REVISON &quot;ubuntu-trusty-a1&quot;)
+    set(CPACK_PACKAGE_FILE_NAME &quot;${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_DEBIAN_REVISON}_${_OS_ARCH}&quot;)
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY &quot;optional&quot;)
+    set(CPACK_DEBIAN_COMPRESSION_TYPE &quot;gzip&quot;)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS &quot;git (&gt;= 1:2.1.4), bison (&gt;= 2:3.0.2), flex (&gt;= 2.5.39), python-setuptools (&gt;= 3.3.8), python-dev (&gt;= 2.7.9), autoconf (&gt;= 2.69), libtool (&gt;= 2.4.2), zlib1g-dev (&gt;= 1:1.2.8), texinfo (&gt;= 5.2.0), help2man (&gt;= 1.46.4), gawk (&gt;= 1:4.1.1), g++ (&gt;= 4:4.9), curl (&gt;= 7.38.0), texlive, cmake (&gt;= 3.0.2), subversion (&gt;= 1.8.10)&quot;)
+  endif()
+
+  include(CPack)
+endif()
+```
+
+Third-party dependencies required by the library except Protocol Buffers were skipped for brevity. See [GitHub](https://github.com/pmateusz/examples/blob/master/build_deb_package/ubuntu/CMakeLists.txt) for the full content of the file. Important elements of the CPack configuration are explained below.
+
+1. Declare the CMake header. It should mention the minimum supported CMake version, because some commands or their options may not be available in older versions of CMake.
+1. Declare the project name and the version. The name and the version of the project will be reused to set the package name and version respectively.
+1. Import custom utility functions. The script uses two non-standard functions that operate on file paths. `m_check_filepath` asserts that a file exists in the specified location. Otherwise a fatal error is raised. `m_get_filepath` is an extension of `m_check_filepath` that assigns the absolute filepath to a local variable. Implementation of both helper functions is available in the [Utils.cmake](https://github.com/pmateusz/examples/blob/master/build_deb_package/ubuntu/Utils.cmake) file. The default CMake command to operate on file paths, [get_filename_component](https://cmake.org/cmake/help/v3.9/command/get_filename_component.html, cannot be configured to raise a fatal error. I found the strict variant more useful to prevent creating a package of a project that did not compile correctly or was restructured since previous release.
+1. Declare a custom target `dist` to build a package.
+1. Specify files that should be included in the package using the [`install`](https://cmake.org/cmake/help/v3.9/command/install.html) command. 
+1. Set the package output format and metadata. CPack is available as a CMake module. It is considered a good practice to ensure that module is available and load it on demand. Available metadata depends on the package format. Some properties may be required to set to build a package. For more information on other output formats and their configuration see [the CPack documentation](https://cmake.org/cmake/help/v3.9/manual/cpack.1.html).
+
+Make sure that the `include(CPack)` statement is the final command of the CPack configuration block. Otherwise, the module may not work correctly.
+
+Once the CPack configuration is ready run the **cmake** program to generate make files for your platform. This step should succeed if there are no syntax errors in the CPack configuration and all files required to build the package are available in the file system. Then run `make dist` to build the package using the make files generated in the previous step. It is common to output make files to a separate directory, so they can be easily removed if needed.
+
+The sequence of commands below attempts to remove previous make files, generates new make files and builds a package if previous steps were successful.
+
+```shell
+rm -Rf build \
+&amp;&amp; mkdir -p build \
+&amp;&amp; cd build \
+&amp;&amp; cmake .. \
+&amp;&amp; make dist
+```
+It is useful to package software on a clean operating system image. Following this practice is important for several reasons. Firstly, all administrator operations required to build a package are either documented or automated. Secondly, the build is always executed in the same environment, so it is reproducible. Furthermore, package content is not affected by user activity, temporary changes or software updates. Finally, bugs are detected as soon as possible, because they are not masked by undocumented temporary modifications.
+
+Fortunately, using a clean operating system image does not imply that the process has to be manual. In fact, packaging can be automated end-to-end due to the advent of provisioning tools. In this article building a package is implemented as a Vagrant script. Vagrant is an automation tool that provides a unified interface for accessing popular provisioning tools and virtual machine providers. If you are not familiar with Vagrant or would like to keep things simple, execute the shell scripts referenced by the Vagrant configuration below. Otherwise, to learn more about Vagrant and install it in your environment, see the [official project site](https://www.vagrantup.com/).
+
+```
+Vagrant.configure(&quot;2&quot;) do |config|
+  config.vm.box = &quot;ubuntu/trusty64&quot;
+  config.vm.hostname = &quot;ubuntu.server.org&quot;
+  config.vm.provider :virtualbox do |vm|
+    vm.memory = 4096
+    vm.cpus = 4
+  end
+
+  config.vm.provision :shell, name: &quot;install-prerequisites&quot;, path: &quot;third-party-install.sh&quot;
+  config.vm.provision :shell, name: &quot;install-cmake&quot;, path: &quot;cmake-install.sh&quot;
+  config.vm.provision :shell, privileged: false, name: &quot;compile-or-tools&quot;, path: &quot;or-tools-compile.sh&quot;
+  config.vm.provision :shell, privileged: false, name: &quot;package-or-tools&quot;, path: &quot;or-tools-package.sh&quot;
+end
+```
+
+Download the Vagrant and shell scripts from [GitHub](https://github.com/pmateusz/examples/tree/master/build_deb_package/ubuntu) and save them in the same folder.
+
+Open the folder in terminal and run the `vagrant up` command.
+
+```shell
+vagrant up
+```
+
+The workflow consists of the following phases:
+
+* Download the operating system image,
+* Install external tools and some third-party libraries required for compilation,
+* Install the latest version of CMake from sources,
+* Download the project sources,
+* Download and compile remaining third-party libraries required by the project,
+* Compile the project,
+* Package the project as a library along with its third-party dependencies.
+
+The whole packaging process may take up to 2 hours on a slow network connection. Fortunately, the process requires no user interaction.
+
+Once the final step completes the package `or-tools-6.0-ubuntu-trusty-a1_amd64.deb` should be written to the directory that contains the Vagrant script.
+
+# Setup a local, secure package repository
+
+Integrity of Debian package repositories is protected by a royalty-free, key-based cryptographic solution alternative to the commercial proprietary Pretty Good Privacy (PGP). Its open standard, known as OpenPGP, is defined in [RFC4880](https://www.ietf.org/rfc/rfc4880.txt). Free implementation of the standard is available on Linux distributions by [GNU Foundation](https://www.gnu.org/home.en.html) as GnuGP Privacy Guard or GnuPG for short. The software is distributed on Debian and Ubuntu as the `gnupg` package.
+
+Install the `gnupg` package.
+
+```shell
+sudo apt-get install gnupg
+```
+
+Successful generation of a new PGP key pair requires sufficient amount of entropy in the system. The exact minimum threshold depends on the size of a key and the algorithm selected in the wizard.
+
+Check the amount of entropy in the system.
+
+```shell
+cat /proc/sys/kernel/random/entropy_avail
+```
+
+A value larger than 3000 bits is sufficient to create strong 4096 bit keys. If the value is lower than 1000 bits, you certainly should generate more entropy. Otherwise, the **gpg** program will issue a warning about insufficient entropy in kernel and wait until more entropy is available. That may force you to stop the key generation process if you are connected via SSH, have a single terminal window and no means to generate more entropy.
+
+Install `rng-tools` to accelerate entropy collection by kernel. 
+
+```shell
+apt-get install rng-tools
+```
+
+The package contains the hardware RNG entropy gatherer daemon **rngd**. The program uses hardware random number generators if they are available in the system. They are faster than traditional sources of entropy, such as inter-interrupt timings, inter-keyboard timings or disk latency. The **rngd** daemon should be started automatically after the package is installed.
+
+Generate a PGP key pair. To make things simpler for the first time, provide an empty password while answering the wizard questions. This way you will avoid the password prompt before importing a package to the local repository.
+
+```shell
+gpg --gen-key
+```
+
+If you would like to use an existing key, import it using the command below.
+
+```shell
+gpg --allow-secret-key-import --import private.key
+```
+
+For completeness the cheat sheet below contains commands for common operations on PGP keys. The `--armor` option is used to export a key in ASCII format, so the output can be printed and sent via email. Other options are self-explanatory. For information how to use the **gpg** utility to sign documents, verify signatures, edit or revoke keys check the man pages.
+
+| GPG Cheat Sheet |
+|:-------------|
+| gpg --gen-key |
+| gpg --output public.key --armor --export email.address |
+| gpg --output private.key --armor --export-secret-key email.address |
+| gpg --import public.key |
+| gpg --allow-secret-key-import --import private.key |
+| gpg --delete-key email.address |
+| gpg --delete-secret-key email.address |
+| gpg --list-keys |
+| gpg --list-secret-keys |
+
+Install the `reprepro` program for local Debian package repository administration. It simplifies and automates file system operations that otherwise would be toilsome and error-prone.
+
+```shell
+sudo apt-get install reprepro
+```
+
+Create a directory for repository and open it in a terminal window.
+
+```shell
+mkdir debian &amp;&amp; cd debian
+```
+
+Create a directory named **conf** and move to it.
+
+```shell
+mkdir conf &amp;&amp; cd conf
+```
+
+Create a file named **distributions**.
+
+```shell
+touch distributions
+```
+
+The file stores the repository metadata and configuration. The listing below presents an example content.
+
+```shell
+Origin: pmateusz.github.io/debian
+Label: pmateusz.github.io/debian
+Codename: jessie
+Architectures: amd64
+Components: main
+Description: Personal repository
+SignWith: B2323F7E
+```
+
+The meaning of specific headers is explained in the table below.
+
+| Header | Required | Possible Values | Documentation |
+|:-------|:---------|:----------------|:--------------|
+| Origin | No | Any text | Name of maintainer, company name, address of repository  |
+| Label | No | Any text | Name of maintainer, company name, address of repository |
+| Codename | Yes | Jessie, Trusty etc. | Unique identifier of a distribution. Fixed and not supposed to change. Used to reference the repository in user configuration. |
+| Architectures | Yes | amd64, i386, source | Multiple values can be provided separated by spaces. |
+| Components | Yes | main, non-free, contrib | Apt repository naming scheme. Used to reference the repository in user configuration. |
+| SignWith | No | yes, default, KEY.ID | The parameter passed to the `libpgpgme` library and controls the selection of a private key used to issue a signature. If the value is set to **yes** or **default** the first key will be used. If packages are not to be signed, the SignWith header should be removed. |
+
+The KEY.ID value for the **SignWith** header can be obtained from the `gpg --list-secret-keys` output.
+
+```shell
+username@debian:~/dev/debian/conf$ gpg --list-secret-keys
+/home/username/.gnupg/secring.gpg
+---------------------------------
+sec   4096R/B4411E34 2017-05-19 [expires: 2018-05-19]
+uid                  Forename Surname (username) &lt;email.address&gt;
+ssb   4096R/B2323F7E 2017-05-19
+```
+
+In the example above `B2323F7E` is the key id to use in configuration. For curious readers **sec** and **ssb** are resolved to secret key and secret subkey respectively. For more information on GPG subkeys see [the blog post](https://www.void.gr/kargig/blog/2013/12/02/creating-a-new-gpg-key-with-subkeys/).
+
+Import the package to the local repository. Replace repository path, codename and package with your values.
+
+```shell
+reprepro --basedir REPOSITORY.PATH includedeb CODENAME PACKAGE
+```
+
+Other common repository operations are listing packages stored in a repository and removing a package from a repository.
+
+```shell
+reprepro --basedir REPOSITORY.PATH list CODENAME
+reprepro --basedir REPOSITORY.PATH remove CODENAME PACKAGE
+```
+
+# Host a package repository using GitHub Pages
+
+Create a new repository in GitHub.
+
+Open the **Settings** tab and move to the **GitHub Pages** section. Enable GitHub Pages feature, select **master branch** as the source and save your changes.
+
+Initiate an empty local Git repository in the root folder of the package repository.
+
+```shell
+git init
+```
+
+Export the GPG public key that will be used by clients to verify package signatures.
+
+```shell
+gpg --output PUBLIC.KEY --armor --export EMAIL.ADDRESS
+```
+
+Copy the public key to the local Git repository.
+
+```shell
+mv PUBLIC.KEY REPOSITORY.PATH
+```
+
+Add all repository files to the local repository.
+
+```shell
+git add --all
+git commit -m &quot;Package repository release&quot;
+git remote set-url origin git@github.com:USERNAME/REPOSITORY.git
+git push origin master
+```
+
+# Register an external repository
+
+Add the public GPG key to the apt sources keyring.
+
+```shell
+wget -qO - https://USERNAME.github.io/REPOSITORY/PUBLIC.KEY | sudo apt-key add -
+```
+
+To list and remove a key from apt sources use the following commands respectively.
+
+```shell
+apt-key list
+sudo apt-key del KEY.ID
+```
+
+Register the external package repository.
+
+```shell
+sudo vim /etc/apt/sources.list
+```
+
+Add the following line, replace variables with your values and save your changes.
+
+```shell
+deb http://USERNAME.github.io/REPOSITORY CODENAME COMPONENT 
+```
+
+Refresh the apt configuration.
+
+```shell
+sudo apt-get update
+```
+
+Finally, install the package from your external repository.
+
+```
+sudo apt-get install PACKAGE
+```</content><author><name></name></author><summary type="html">Keeping a project build in a manageable time range is an important prerequisite for an efficient software development workflow. The more complex projects are the more time, automation effort and tools required to develop and maintain an efficient build pipeline. Regardless of a scale and type of a project the core principle of avoiding unnecessary work is worth applying. This tutorial presents an approach to simplify a build process by creating a package of a third-party software component upfront and hosting it in an external package repository. It is an alternative to building a component from sources on a development or continuous integration machine.</summary></entry><entry><title type="html">Scalable and Cost Effective Linux Administration</title><link href="https://pmateusz.github.io/linux/2017/05/20/linux-managing-remote-machines.html" rel="alternate" type="text/html" title="Scalable and Cost Effective Linux Administration" /><published>2017-05-20T00:00:00+01:00</published><updated>2017-05-20T00:00:00+01:00</updated><id>https://pmateusz.github.io/linux/2017/05/20/linux-managing-remote-machines</id><content type="html" xml:base="https://pmateusz.github.io/linux/2017/05/20/linux-managing-remote-machines.html">{% asset remote_machine_administration alt:'Parallel SSH' %}
+
+Managing multiple machines without automation and tool support could be an annoying duty for a creative person. There are many ways to better spend time than to execute the same command on each machine. Nowadays, a professional system administrator should be able to build and manage networks of thousands computers. Even if a system administration is not your full-time job and the cluster to manage is two orders of magnitude smaller it is still worth to use your time effectively. Why not invest some time upfront and master a few key skills to better manage Linux machines in the future?
+ 
+ &lt;!--more--&gt;
+
+This article aims to provide a collection of practices for cost effective and scalable administration of remote machines. Cost effective means that an operation will not require more human effort than absolutely necessary. For example, an administrator will still have to execute an `apt-get install` command to install a software package. However, this activity will be performed once regardless of the number of machines to manage, which moves us to the scalable part. Adding a new machine to a system will not increase administration effort if the system is working under normal conditions.
+
+## Examples
+
+Running examples presented in the article requires access to multiple machines with a custom network configuration. Fortunately, to accurately imitate conditions of managing a lab it is enough to set up a simple cluster of three virtual machines: master and two slaves. The master will be used to issue administration commands which will be then replicated automatically to slave nodes. There is no limit on the number of slave nodes, but two are enough to demonstrate the approach with no loss of generality.
+
+The cluster of virtual machines will be set up using Vagrant, a tool for configuring virtual machine environment in an automated fashion. Vagrant is independent of a virtual machine provider, such as [VirtualBox](https://www.virtualbox.org/), and the actual tool used to configure the machine, which referred to as the provisioner. To learn more about Vagrant I recommend starting with the [introduction](https://www.vagrantup.com/intro/index.html) on the official project site. Examples below use Virtual Box and the shell provisioner, which is built into Vagrant.
+
+1. Install VirtualBox.
+
+   Linux distributions often offer VirtualBox packages in their package repository. It is probably the easiest option to choose if you would like to automatically get access to future updates. However, before registering a new package source ensure it is dedicated for your version of the operating system. For example, if you are using Debian Jessie, the backport for Debian Wheezy may not work on your system.
+   
+   For popular Linux distributions the safest solution is installing the Virtual Box package from the [official downloads page](https://www.virtualbox.org/wiki/Downloads). After successful download, install the package using the command below with the correct package name.
+   
+   ```shell
+sudo dpkg -i virtualbox-5.1_5.1.22-115126-Debian-jessie_amd64.deb 
+```
+
+    Do not be discouraged by possible error messages printed by the package manager.
+
+    ```shell
+dpkg: error processing package virtualbox-5.1 (--install):
+ dependency problems - leaving unconfigured
+```
+   Dependency problems can be easily resolved by running the command:
+
+    ```shell
+sudo apt-get install -f
+```
+
+    If you would like try Virtual Box from a package source, search the official documentation of your Linux distribution on this subject or click direct links for [Debian](https://wiki.debian.org/VirtualBox) and [Ubuntu](https://help.ubuntu.com/community/VirtualBox) users.
+    
+1. Install Vagrant.
+
+    Commands below install the latest version of Vagrant as of writing this on Debian. Vagrant has very short release cycle, so it is strongly recommended to download the latest version from the [official project downloads page](https://www.vagrantup.com/downloads.html).
+
+    ```shell
+wget https://releases.hashicorp.com/vagrant/1.9.4/vagrant_1.9.4_x86_64.deb
+sudo dpkg -i vagrant_1.9.4_x86_64.deb
+sudo apt-get install -f
+```
+
+1. Download Vagrant files for this article: [master](/assets/vagrant/managing_remote_machines/master/Vagrantfile), [slave1](/assets/vagrant/managing_remote_machines/slave1/Vagrantfile) and [slave2](/assets/vagrant/managing_remote_machines/slave2/Vagrantfile). The virtual machines are provisioned to test examples with no extra configuration. Administration commands should be issued from the master node.
+
+## Use friendly aliases for machines
+
+Being easy for humans to remember was certainly not a priority for the Internet Protocol design committee. A group counting more than handful machines deserves its own, meaningful naming scheme. Furthermore, if hosts are distributed in different locations, it may also be useful to mention the physical location in a domain name.
+
+Come up with a naming scheme and register host names to the the `/etc/hosts` file. This change should be applied at least on the master node, where you issue administrator commands from.
+
+```shell
+sudo vim /etc/hosts
+```
+
+```shell
+# /etc/hosts
+127.0.0.1       localhost
+127.0.1.1       debian
+
+192.168.0.2     master.lab1 master
+192.168.0.3     slave1.lab1 slave1
+192.168.0.4     slave2.lab1 slave2
+
+# The following lines are desirable for IPv6 capable hosts
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+```
+
+Now, you can use a hostname alias to connect to the selected machine.
+
+For consistency, you may decide to update the hostname on the target machine as well.
+
+Edit the `/etc/hostname` file to update the hostname.
+
+```shell
+sudo sh -c 'echo new-hostname &gt; /etc/hostname'
+```
+
+Execute the `hostnamectl` command to update the hostname. The configuration change will become visible for system services. Rebooting the system has a similar effect.
+
+```shell
+hostnamectl set-hostname new-hostname
+```
+
+## Deploy administrator SSH key on the remote machine
+
+If you often work remotely on a specific host it may be useful to add your SSH key to the `~/.ssh/authorized_hosts` file on the remote machine. This way you will avoid being asked for a password before establishing a new SSH connection.
+
+Instead of editing the file directly, you could use the `ssh-copy-id` command as shown in the example below.
+
+```shell
+ssh-copy-id username@remote-host
+```
+
+If you do not own a SSH key it can be generated using the `ssh-keygen` command from the `openssl` package. 
+
+```shell
+ssh-keygen -t rsa -b 4096 -C &quot;your_email_alias@domain.com&quot;
+```
+
+Finally, if you have not cut your teeth on SSH, I cannot tell how much I recommend reading [An Illustrated Guide to SSH Agent Forwarding](http://www.unixwiz.net/techtips/ssh-agent-forwarding.html). SSH is ubiquitous nowadays and understanding the protocol internals will help you avoid security pitfalls in the future.
+
+## Use parallel SSH
+
+PSSH is a collection of parallel extensions to console utilities originally developed by the OpenSSH project. The tools are distributed in the `pssh` package available for download from official Debian and Ubuntu repositories. Names for the parallel versions of programs were created by adding `parallel-` prefix. For example `parallel-ssh` is the parallel version of the `ssh` client.
+
+The examples below are limited to `parallel-ssh` client. Unfortunately, comprehensive documentation is not the asset of this package. To learn more about the `pssh` project simply install the package and search its man pages or check out the [official project sources](http://code.google.com/p/parallel-ssh/).
+
+If you feel that the program name `parallel-ssh` is too long to conveniently type in terminal, consider registering its shorter alias such as `pssh` in your bash profile.
+
+First, check the absolute path to the program and add the alias to the `~/.bashrc` file.
+
+```shell
+whereis parallel-ssh
+parallel-ssh: /usr/bin/parallel-ssh /usr/share/man/man1/parallel-ssh.1.gz
+```
+
+Debian and Ubuntu users may end up with the following line in the `~/.bashrc` file.
+
+```shell
+alias pssh=`/usr/bin/parallel-ssh`
+```
+
+Before letting the `parallel-ssh` shine define a text file with the list of hosts to target by your commands and save it as the `hosts.txt` file, which we refer to in the following examples, or whatever you find proper.
+
+```shell
+# hosts.txt
+vagrant@slave1.example
+vagrant@slave2.example
+```
+
+For example, let's check the machine uptime.
+```shell
+pssh -h hosts.txt -i uptime
+```
+
+The `-i` switch instructs the pssh to display output from the processes executed on the target machines. If an exit code is sufficient, feel free to skip the switch.
+
+Finally, one may wonder how to execute commands that require user input. If a workflow on a target machine is fully interactive, which cannot be handled with an input stream pipe, it may not be the best candidate for parallel execution to start with. If the only obstacle that prevents making the workflow parallel is providing `sudo` password, it may be useful to waive this security mechanism for certain user accounts or commands. Waiving sudo password question was explained in [the post on productivity in Linux]({% post_url 2017-04-15-linux-productivity-tips %}). 
+
+## Setup a local package repository
+
+One of administration practices that greatly reduces the complexity of a network host management and prevents potential software-related problems from arising is ensuring that every machine stays updated and has consistent versions of software installed. Debian community takes responsibility for preparing and testing software packages hosted in public repositories. However, your organization may not have moved to the most recent Linux distribution or require software that lacks a voluntary package maintainer. A robust solution to this problem is setting up a local package repository that will contain packages that address special requirements of your organization.
+
+This section will present how to set up a local Advanced Packaging Tool (APT) repository hosted using the Apache HTTP server.
+
+Firstly, install the `apache2` and `dpkg-dev` packages on the machines that will be used to host the package repository.
+
+```shell
+sudo apt-get install apache2 dpkg-dev
+```
+
+Create the `/var/www/deb/amd64` directory and copy there all packages that should compose the repository.
+
+```shell
+mkdir -p /var/www/deb/amd64
+```
+
+Build packages index files of the repository and save them compressed using the `gzip` algorithm.
+
+```shell
+cd /var/www/deb/
+dpkg-scanpackages amd64 | gzip -9c &gt; amd64/Packages.gz
+```
+
+The `dpkg-scanpackages` program may print errors or warnings, such as package duplication. Make sure you review the index files before release.
+
+Finally, update the list of package sources on the client machines.
+
+Open the `sources.list` file for edition.
+```shell
+sudo vim /etc/apt/sources.list
+```
+
+Register the package repository using the correct hostname.
+```shell
+# /etc/apt/sources.list
+deb http://sever_hostname/deb/ amd64/
+```
+
+Packages available in the local repository should become visible after refreshing the `apt` configuration.
+```shellpackage manage
+sudo apt-get update
+```
+
+## Configure a cluster management system
+
+If the main purpose of the machines is to serve as a computing cluster you may consider installing a dedicated cluster management system. For example, Torque is a robust, open source cluster management system used in many super computing centers around the world. Learning and configuring Torque for the first time would require a significant time commitment, but the effort should pay off long term. For more information on Torque you may refer to previous posts in this blog covering Torque [installation]({% post_url 2017-03-25-torque-installation-on-ubuntu %}), [job submission]({% post_url 2017-03-16-torque-job-submission %}) and [management]({% post_url 2017-03-16-torque-job-management %}).</content><author><name></name></author><summary type="html">Managing multiple machines without automation and tool support could be an annoying duty for a creative person. There are many ways to better spend time than to execute the same command on each machine. Nowadays, a professional system administrator should be able to build and manage networks of thousands computers. Even if a system administration is not your full-time job and the cluster to manage is two orders of magnitude smaller it is still worth to use your time effectively. Why not invest some time upfront and master a few key skills to better manage Linux machines in the future?</summary></entry><entry><title type="html">Device Drivers Installation on Linux</title><link href="https://pmateusz.github.io/linux/2017/04/22/linux-usb-device-drivers.html" rel="alternate" type="text/html" title="Device Drivers Installation on Linux" /><published>2017-04-22T00:00:00+01:00</published><updated>2017-04-22T00:00:00+01:00</updated><id>https://pmateusz.github.io/linux/2017/04/22/linux-usb-device-drivers</id><content type="html" xml:base="https://pmateusz.github.io/linux/2017/04/22/linux-usb-device-drivers.html">{% asset tp_link_card alt:'USB Network Card' %}
+
+Linux operating system family has not yet came with a robust solution to automatically detect missing drivers and install relevant firmware in the background. Fortune favours the bold, so don't be discouraged by the lack of this feature. This post aims to provide you with general purpose instructions how to find packages with drivers that are required by your hardware assuming firmware is available for your Linux distribution. &lt;!--more--&gt;
+
+Let's take a popular USB network card as an example.
+
+## Tutorial
+
+1. Plug off the network card from the USB port, get a coffee and plug it back.
+
+1. Open a terminal window and print the latest messages in the kernel ring buffer using the `dmesg` command.
+
+    ```shell
+dmesg
+[  405.865412] usb 2-2: USB disconnect, device number 2
+[  442.751965] usb 2-2: new high-speed USB device number 11 using xhci_hcd
+[  442.952428] usb 2-2: New USB device found, idVendor=0cf3, idProduct=9271
+[  442.952431] usb 2-2: New USB device strings: Mfr=16, Product=32, SerialNumber=48
+[  442.952433] usb 2-2: Product: USB2.0 WLAN
+[  442.952434] usb 2-2: Manufacturer: ATHEROS
+[  442.952435] usb 2-2: SerialNumber: 12345
+[  442.952973] usb 2-2: ath9k_htc: Firmware htc_9271.fw requested
+[  442.953077] usb 2-2: firmware: failed to load htc_9271.fw (-2)
+[  442.953080] usb 2-2: Direct firmware load failed with error -2
+[  442.953081] usb 2-2: Falling back to user helper
+[  442.953636] usb 2-2: ath9k_htc: USB layer deinitialized
+```
+
+    The console output contains a name of the firmware `htc_9271.fw` which has not been successfully loaded.
+
+    If you are not such lucky to find relevant names here. Try the manufacturer or the engineering name for your product which may be different from the marketing name.
+
+    Use the `lsusb` command to check the name of device connected to USB port and review messages logged to `/var/log/syslog`.
+
+    ```shell
+lsusb
+sudo tail -f /var/log/syslog
+```
+
+1. Find relevant package name for your Linux distribution in the package search using the firmware name. The following links point to [Debian](https://www.debian.org/distrib/packages) and [Ubuntu](http://packages.ubuntu.com/) package search respectively.
+
+    Instead of the package search on website you may use the Debian REST API directly.
+
+    | Endpoint | Operation |
+    | -------- | --------- |
+    | https://packages.debian.org/`name` | Search on package names |
+    | https://packages.debian.org/src:`name` | Search on source package names |
+    | https://packages.debian.org/file:`path` | Search for paths ending in the keyword |
+
+    If you don't get any meaningful results by search on package names, consider advanced search on package directories or the contents of packages. Indeed, in the tutorial example `htc_9271.fw` the relevant package can be found using the last option: [https://packages.debian.org/file:htc_9271.fw](https://packages.debian.org/file:htc_9271.fw).
+
+1. Open the [firmware-atheros package description](https://packages.debian.org/jessie/firmware-atheros) from the search results.
+
+    You should quickly spot the **non-free** label next to the package name. Packages marked with this tag do not comply with Debian Free Software Guidelines (DFSG) or were not assessed for such compliance. It is often the case for a third-party device drivers, especially if their codebase is not available open source.
+
+    It is still possible to install packages marked as non-free using the `apt-get` tool chain. However, it requires a prior update of the package manager configuration, because by default third-party packages are not mentioned in the list of available sources in the package repository.
+
+1. Enable the `non-free` source in official package repositories by editing the `sources.list` file.
+
+    ```shell
+sudo vim /etc/apt/sources.list
+```
+
+    After your changes the `sources.list` file should resemble the following example.
+    ```shell
+deb http://httpredir.debian.org/debian jessie main contrib non-free
+deb-src http://httpredir.debian.org/debian jessie main contrib non-free
+deb http://httpredir.debian.org/debian jessie-updates main contrib non-free
+deb-src http://httpredir.debian.org/debian jessie-updates main contrib non-free
+deb http://security.debian.org/ jessie/updates main contrib non-free
+deb-src http://security.debian.org/ jessie/updates main contrib non-free
+deb http://httpredir.debian.org/debian jessie-backports main contrib non-free
+```
+
+1. Update the list of packages and install the `firmware-atheros` package.
+
+    ```shell
+sudo apt-get update
+sudo apt-get install firmware-atheros
+```
+
+1. Disconnect the USB network card and plug it again. If your network card is equipped with a status diode, it should start blinking.
+
+1. Finally, print the latest kernel messages to confirm that the firmware has been successfully loaded.
+
+    ```shell
+[ 6972.212991] usb 2-2: new high-speed USB device number 12 using xhci_hcd
+[ 6972.413663] usb 2-2: New USB device found, idVendor=0cf3, idProduct=9271
+[ 6972.413666] usb 2-2: New USB device strings: Mfr=16, Product=32, SerialNumber=48
+[ 6972.413667] usb 2-2: Product: USB2.0 WLAN
+[ 6972.413668] usb 2-2: Manufacturer: ATHEROS
+[ 6972.413669] usb 2-2: SerialNumber: 12345
+[ 6972.414213] usb 2-2: ath9k_htc: Firmware htc_9271.fw requested
+[ 6972.414345] usb 2-2: firmware: direct-loading firmware htc_9271.fw
+[ 6972.697655] usb 2-2: ath9k_htc: Transferred FW: htc_9271.fw, size: 51272
+[ 6972.935153] ath9k_htc 2-2:1.0: ath9k_htc: HTC initialized with 33 credits
+[ 6973.200832] ath9k_htc 2-2:1.0: ath9k_htc: FW Version: 1.3
+```
+
+I hope this example contributed to better understanding of Linux device drivers ecosystem and provided you with a set of clues ready to use while investigating missing driver issues.</content><author><name></name></author><summary type="html">Linux operating system family has not yet came with a robust solution to automatically detect missing drivers and install relevant firmware in the background. Fortune favours the bold, so don’t be discouraged by the lack of this feature. This post aims to provide you with general purpose instructions how to find packages with drivers that are required by your hardware assuming firmware is available for your Linux distribution.</summary></entry><entry><title type="html">Linux Productivity Tricks and Tips</title><link href="https://pmateusz.github.io/linux/2017/04/15/linux-productivity-tips.html" rel="alternate" type="text/html" title="Linux Productivity Tricks and Tips" /><published>2017-04-15T00:00:00+01:00</published><updated>2017-04-15T00:00:00+01:00</updated><id>https://pmateusz.github.io/linux/2017/04/15/linux-productivity-tips</id><content type="html" xml:base="https://pmateusz.github.io/linux/2017/04/15/linux-productivity-tips.html">{% asset productivity_linux alt:'Linux Productivity Cover Image' %}
+
+This article is a the collection of Linux customizations and productivity tricks. Instead of looking for relevant commands in my memory and in the internet every time I need them I decided to organize them here. I hope you will find them useful too.
+
+&lt;!--more--&gt;
+
+The command line examples presented below were tested on Debian Jessie. They should be portable to Ubuntu and other Linux environments from Debian family.
+
+I am going to keep this post updated, so you may consider subscribing to the RSS channel.
+
+## Disable sudo password question
+
+How many times have you been asked your sudo password? Such question in this context does not considerably improve security of your system. You have already managed to login and you just have issued a command, so are staying active.
+
+The sudo securicy policy plugin is configured using the sudoers configuration file, stored by default in the `/etc/sudoers` location.
+
+The sudoers file must be edited by the `visudo` command executed as root.
+```shell
+sudo visudo
+```
+
+Add the following rule with your username to the sudoers file. After the successful update the user will be allowed to run any command as anyone without beging prompted for a password.
+
+```shell
+username ALL=(ALL) NOPASSWD:ALL
+```
+
+See the sudoers man pages to learn more about the sudo security policy plugin and configuration options available through the sudoers file.
+
+```shell
+man sudoers
+```
+
+## Setup the SSH agent
+
+Another workflow that often requires a password is accessing protected resources such as private Git repositories. Fortunately, service providers like [GitHub]() or [BitBucket]() support secure shell (SSH), a viable alternative that simplifies authentication process.
+
+This tip explains how to add your SSH identity to the SSH agent automatically every time you open to the Bash shell and release it as soon as your session expires.
+
+If you are new to SSH I strongly encourage you to read an excellent article [An Illustrated Guide to SSH Agent Frowarding](http://www.unixwiz.net/techtips/ssh-agent-forwarding.html) which explains principles behind secure shell that later will help you efficiently troubleshoot problems and avoid common pitfalls that breach security of your system.
+
+This section assumes that you have already a SSH key pair: `id_rsa` and `id_rsa.pub` saved in `~/.ssh` directory. If you have not generate it yet see the the [GitHub tutorial](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/) which explains how to create a new SSH key pair.
+
+Firstly, start the SSH agent and register your identity by adding the following snippet to the `.bashrc` file.
+
+```shell
+if [ -z &quot;$SSH_AUTH_SOCK&quot; ] ; then
+    eval `ssh-agent`
+    ssh-add
+fi
+```
+
+Secondly, append the command below to the `.bash_logout` file. It kills the SSH agent associated with your terminal session as soon as you close it.
+
+```shell
+kill $SSH_AGENT_PID
+```
+
+Finally, register the SSH public key in your service provider. It requires you to add the public SSH key fingerprint in your account.
+
+Use the following command to print your public SSH fingerprint and refer to your service provider instructions where it should be saved.
+
+```shell
+ssh-keygen -lf ~/.ssh/id_rsa.pub
+cat 
+```
+
+# Enable autologin
+
+This tip assumes your computer cannot be accessed by unauthorized person. You may consider it for your home PC. Applying it on an office workstation is certainly looking for trouble. 
+
+Automatic login is tightly coupled to your virtual desktop environment. The example below applies to [Gnome 3](https://www.gnome.org/). Other environments follow similar pattern, but use different locations for configuration files.
+
+Open Gnome Desktop Manager (GDM) configuration file and enable automatic login for your username.
+
+```shell
+sudo vim /etc/gdm3/daemon.conf
+```
+
+```
+# GDM configuration storage
+#
+# See /usr/share/gdm/gdm.schemas for a list of available options.
+
+[daemon]
+# Enabling automatic login
+AutomaticLoginEnable = true
+AutomaticLogin = username
+```
+
+## Adjust dynamic scaling factor of CPU
+
+It is unlikely that you are utilizing your CPU at full speed without changing default settings. Most common CPU power schemes are set to run at less-than-maximum frequency to conserve power and keep your fan silent. It is considered that this policy also increases hardware lifetime, though the actual savings are difficult to quantify.
+
+If you are running CPU intensive calculations on your PC and want results as soon as possible adjusting effective CPU frequency temporarily should not hurt.
+
+Firstly, try to asses if increasing CPU frequency makes sense in your context. If your calculation is IO intensive or the CPU is a few generations behind the game may not be worth the candle.
+
+To see the detailed information of your CPU open the `/proc/cpuinfo` file or run the `lscpu` command.
+
+```shell
+lscpu
+
+cat /proc/cpuinfo
+```
+
+Proceed by installing the `cpufrequtils` package. It contains a collection of command line utilities that allow for a temporary adjustment of the effective CPU frequency.
+
+```shell
+sudo apt-get install cpufrequtils
+```
+
+Check current frequency of each core and the power saving scheme in use. The latter is also known a governor.
+```shell
+cpufreq-info
+```
+
+The output should include the current governor which may be `powersave` or `ondemand` and other available options.
+
+Finally, switch temporarily all cores to the `performance` governor policy.
+
+```
+sudo cpufreq-set -r -g performance
+```
+
+The governor policy will fall back to the default option after reboot. For a persistent change edit the `/etc/init.d/cpufrequtils` file.
+
+CPU frequency adjustment heavily depends on your Linux distribution. For more information on the topic search the system documentation using the `CPU frequency scaling` or `CPU dynamic scaling` keywords.
+
+## Check where the package is installed on the machine
+
+StackOverflow is full questions where to find the location of particular binary or configuration file. Fortunately, one does not have to cut his teeth on maintaining a Linux repository to answer them.
+
+Firstly, you may not have access to the operating system of your colleague or a StackOverflow user you are supporting. The fastest option in that case is searching the package repository for that Linux distribution.
+For example, Apache 2 HTTP server binaries and configuration files on Debian Jessie can be listed using the link: https://packages.debian.org/jessie/all/apache2/filelist.
+
+If you have direct access to machine package manager should come to rescue.
+
+Assuming that the Apache HTTP server is installed the following Debian package manager command lists its content.
+
+```shell
+dpkg --listfiles apache2
+```
+
+If you would like include all packages that start with `apache` name use the query below.
+
+```shell
+dpkg --listfiles 'apache*'
+```
+
+Another useful `dpkg` query options are printing all packages installed in the system and listing detailed information about a package.
+
+```shell
+dpkg --list
+dpkg --status apache2
+```
+
+The list of all packages installed in the system is also stored in the `/var/lib/dpkg/available` file.
+
+Some binaries though are not distributed using `*.deb` packages and therefore Debian package manager is clueless about them. 
+
+For finding their absolute paths use the `whereis` or `which` command. The former 
+
+In that case use the `which` command for binary utilities and `locate` for libraries. The former also prints location of source files and man pages.
+
+```shell
+whereis curl
+which curl
+```
+
+On the other hand, if you are building a C or C++ project and would like to know which archive (.a) and shared object (.so) libraries are available list dynamic linker run-time bindings using the command below.
+
+```shell
+sudo ldconfig -v
+```
+
+Finally, let's mention general purpose utilities for querying file system.
+
+`locate` is a command line utility for querying filepaths by pattern. Instead of traversing filesystem directly is uses a file name database. It should return fast and does not negatively affect IO performance. The robustness is paid by accuracy. Results may not include file system items that have been removed or added recently. If you do not get results you expect to see refresh the file name database using the `updatedb` command or use a complement command - `find`.
+
+```shell
+sudo updatedb
+
+locate --ignore-case libcurl
+```
+
+`find` runs the search in a file system. It consumes more IO resources than `locate`, but prints most up to date results. It also supports more sophisticate set parameters that limit the depth of a search tree, include time of modification or the file size. The example below runs a case insensitive search of the curl filename starting from the root of the filesystem. The command is expected to print access denied errors for protected directories therefore its error output is redirected.  Refer to the man pages for the full description of the `find` command. 
+
+```shell
+find / -iname 'curl' 2&gt;/dev/null
+```
+
+I would be pleased to hear your comment if you spot an error in the article. More Linux-related articles are expected to appear in the following weeks. I am going to cover managing multiple Linux machines effectively, disaster recovery like loosing root password and useful commands that you may have missed.</content><author><name></name></author><summary type="html">This article is a the collection of Linux customizations and productivity tricks. Instead of looking for relevant commands in my memory and in the internet every time I need them I decided to organize them here. I hope you will find them useful too.</summary></entry><entry><title type="html">Visual Studio Code as Latex Editor</title><link href="https://pmateusz.github.io/latex/2017/03/29/vs-code-latex-editor.html" rel="alternate" type="text/html" title="Visual Studio Code as Latex Editor" /><published>2017-03-29T00:00:00+01:00</published><updated>2017-03-29T00:00:00+01:00</updated><id>https://pmateusz.github.io/latex/2017/03/29/vs-code-latex-editor</id><content type="html" xml:base="https://pmateusz.github.io/latex/2017/03/29/vs-code-latex-editor.html">{% asset visual_studio_code_latex alt:'Visual Studio Latex Editor Cover Image' %}
+
+From anecdotal evidence engineers tend to carefully evaluate a tool before including it into their standard toolkit. Naturally, products they spend most of time working with become subject of day to day conversations and an inevitable source of complaints every time they hinder productivity. This article presents a Visual Studio Code as a robust editor for the `.tex` files that does not cause much headache.
+
+&lt;!--more--&gt;
+
+This article became obsolete due to recent changes in the editor and Latex plugins. We recommend switching to [the newer version of the post]({% post_url 2018-01-30-vs-code-latex-editor %}).
+
+Visual Studio Code is related to Visual Studio as JavaScript to Java. Both are source code editors from Microsoft, but contrary to its ponderous cousin, Visual Studio Code is lightweight, cross-platform and available open-source.  In the following tutorial I will present how to configure the editor to offer syntax highlight, spell checking and a document preview for Latex files with some help of a few plugins developed by community.
+
+## Tutorial
+
+1. Download the latest version of Visual Studio Code for your system.
+
+   The following Bash snippet downloads and installs Visual Studio Code on Debian and Ubuntu.
+
+   ```shell
+wget -Ovscode.deb https://vscode-update.azurewebsites.net/latest/linux-deb-x64/stable
+dpkg -i vscode.deb
+```
+
+1. Install the following Visual Studio Code plugins .
+
+   ```shell
+code --install-extension streetsidesoftware.code-spell-checker
+code --install-extension ajshort.latex-preview
+code --install-extension ms-vscode.latex
+```
+
+1. Create a directory for a Latex project. Later on in the tutorial we will refer to this directory as the project directory.
+
+1. Create a directory `.vscode` in the project directory.
+   ```shell
+mkdir -p .vscode
+```
+
+   `.vscode` is a directory where Visual Studio Code stores workspace specific settings.
+
+1. Create a `tasks.json` file in the `.vscode` directory with the following content.
+
+    ```shell
+{
+    &quot;version&quot;: &quot;0.1.0&quot;,
+    &quot;isShellCommand&quot;: true,
+    &quot;suppressTaskName&quot;: true,
+    &quot;showOutput&quot;: &quot;always&quot;,
+    &quot;tasks&quot;: [{
+            &quot;taskName&quot;: &quot;Build PDF&quot;,
+            &quot;command&quot;: &quot;pdflatex&quot;,
+            &quot;isBuildCommand&quot;: true,
+            &quot;args&quot;: [
+                &quot;-interaction=nonstopmode&quot;,
+                &quot;-file-line-error&quot;,
+                &quot;report.tex&quot;
+            ]}, {
+            &quot;taskName&quot;: &quot;Build BibTex&quot;,
+            &quot;command&quot;: &quot;bibtex&quot;,
+            &quot;isTestCommand&quot;: true,
+            &quot;args&quot;: [&quot;report.aux&quot;]
+            }]
+}
+```
+
+   The file defines two tasks. A task in Visual Studio Code is an action executed by the editor in response to a specific event. In our case the actions are commands to build a Latex document and refresh bibliography references. The `Build PDF` task is declared as a build command. Its execution can be triggered by a `Ctrl+Shift+B` keystroke combination. The `Build BibTex` task is declared as a test command.
+
+   As of this writing there is no default keystroke bound to the test command.
+You can register a custom binding using menu `File` &gt; `Preferences` &gt; `Keyboard Shortcuts`. For more information on a custom keystroke bindings see [Customizing Shortcut](https://code.visualstudio.com/docs/getstarted/keybindings#_customizing-shortcuts) section in the [Visual Studio Code Key Bindings](https://code.visualstudio.com/docs/getstarted/keybindings) article. 
+
+   Before executing the tasks, you may want to change the `report.tex` and `report.aux` filenames from the template above if you are using different naming convention for files in your project.
+
+   Assuming that the `pdflatex` and `bibtex` command line utilities required to compile Latex documents are installed on your machine, press the key combination `Ctrl+Shift+B` to build the Latex document. You should see the command output in the terminal window integrated into the editor.
+
+1. Enable word wrapping and spell checking in your workspace by creating a `settings.json` file in the `.vscode` directory with the following content.
+
+   ```shell
+{
+  &quot;editor.cursorBlinking&quot;: &quot;solid&quot;,
+  &quot;telemetry.enableCrashReporter&quot;: false,
+  &quot;telemetry.enableTelemetry&quot;: false,
+  &quot;editor.wordWrap&quot;: &quot;on&quot;,
+  &quot;editor.wordWrapColumn&quot;: 80,
+  &quot;editor.wrappingIndent&quot;: &quot;same&quot;,
+  &quot;cSpell.enabled&quot;: true
+}
+```
+
+   The `settings.json` file is the place for the workspace specific settings of the editor. In the example above cursor blinking is disabled for the performance considerations. Telemetry and crash reporting are turned off as well. Automatic word wrapping is enabled to avoid the horizontal scroll bar when lines of text exceed the viewport. Finally, the spell checking offered by an external plugin is enabled.
+
+1. Deactivate spell checking for certain Latex commands and add a custom dictionary of non standard phrases and acronyms that appear in your document.
+
+   Create a `cSpell.json` file in the `.vscode` directory. The example file below loads a custom dictionary file `dictionary.txt` from the `.vscode` directory. The file format is simple list of words separated by a newline character. For more information on custom dictionaries refer to the [project documentation](https://github.com/Jason-Rev/vscode-spell-checker/blob/master/README.md). 
+
+   ```shell
+{
+    &quot;version&quot;: &quot;0.1&quot;,
+    &quot;language&quot;: &quot;en&quot;,
+    &quot;dictionaryDefinitions&quot;: [
+        { &quot;name&quot;: &quot;projectDictionary&quot;, &quot;path&quot;: &quot;./dictionary.txt&quot;}
+    ],
+    &quot;dictionaries&quot;: [&quot;projectDictionary&quot;],
+    &quot;languageSettings&quot;: [
+        { &quot;languageId&quot;: &quot;*&quot;, &quot;dictionaries&quot;: [&quot;projectDictionary&quot;] }
+    ],
+    &quot;ignoreRegExpList&quot;: [
+        &quot;^\\\\\\w+{?&quot;,
+        &quot;\\\\cite{\\w+}&quot;,
+        &quot;\\\\begin{\\w+}&quot;,
+        &quot;\\\\end{\\w+}&quot;,
+        &quot;\\\\usepackage{\\w+}&quot;,
+        &quot;\\\\bibliographystyle{\\w+}&quot;]
+}
+```
+
+   Finally, disable spell checking for Latex commands, words that start with the slash `\` character, and phrases in between parentheses following `begin`, `end`, `cite`, `usepackage` and `bibliographystyle` commands.
+
+Please do not hesitate to comment below if you spot an error or you would like to share your opinion on the subject of the article. Your feedback is highly valued!</content><author><name></name></author><summary type="html">From anecdotal evidence engineers tend to carefully evaluate a tool before including it into their standard toolkit. Naturally, products they spend most of time working with become subject of day to day conversations and an inevitable source of complaints every time they hinder productivity. This article presents a Visual Studio Code as a robust editor for the .tex files that does not cause much headache.</summary></entry><entry><title type="html">Troque Installation on Ubuntu</title><link href="https://pmateusz.github.io/linux/torque/2017/03/25/torque-installation-on-ubuntu.html" rel="alternate" type="text/html" title="Troque Installation on Ubuntu" /><published>2017-03-25T00:00:00+00:00</published><updated>2017-03-25T00:00:00+00:00</updated><id>https://pmateusz.github.io/linux/torque/2017/03/25/torque-installation-on-ubuntu</id><content type="html" xml:base="https://pmateusz.github.io/linux/torque/2017/03/25/torque-installation-on-ubuntu.html">{% asset installation_torque alt:'Torque Installation Cover Image' %}
+
+Torque is an open-source cluster management system deployed in many supercomputing facilities around the world. A quick search in Google returns me a list of Torque user guides from servers in [USA](http://hpcc.ucr.edu/index.html), [UK](http://www.ch.cam.ac.uk/computing/maui-and-torque-introduction), [India](http://www.serc.iisc.in/facilities/torque-batch-system_fermi/) and [Germany](http://www.bioquant.uni-heidelberg.de/about_us/organization/bioquant-it/services/compute-cluster.html) on the first page. Despite wide Torque adoption and extensive [Administrator Guide](http://docs.adaptivecomputing.com/torque/6-0-1/help.htm) I found it difficult to set up a managed cluster on a dozen of computing nodes with no prior experience. Sources of my problems were no official support for Ubuntu by [Adaptive Computing](http://www.adaptivecomputing.com/), the company who maintains Torque, and lack of examples for Ubuntu in the Administrator Guide. The goal for this article is to fill this gap by providing detailed setup instructions for configuration of a Torque cluster with two computing nodes running Ubuntu Trusty Tahr 14.04 LTS.
+
+ &lt;!--more--&gt;
+
+The tutorial is complemented by Vagrant provisioning scripts for a [Torque server](/assets/vagrant/torque/server/Vagrantfile) and a [computing node](/assets/vagrant/torque/mom/Vagrantfile) that automatically execute all steps explained in the article.
+
+### Torque Compilation
+
+We are going to compile Torque with support for [Control Groups](https://help.ubuntu.com/lts/serverguide/cgroups.html). A Linux kernel mechanism for grouping, tracking and limiting the resource usage. 
+The feature allows to set and enforce limits on hardware resources like memory and CPU on the Torque computing nodes. To learn more about Control Groups in Ubuntu refer to the [Ubuntu Server Guide](https://help.ubuntu.com/lts/serverguide/cgroups.html). The table below provides a short overview of other software components required for Torque compilation.
+
+| Software Component | Usage |
+| ------------------ | ----- |
+| [libtool](https://www.gnu.org/software/libtool/) | Generic library providing a consident and portable interface for using shared libraries. |
+| [cpuset](http://man7.org/linux/man-pages/man7/cpuset.7.html) | Pseudo-filesystem interface to the kernel mechanism, which is used to control the CPU and memory placement of processes. |
+| [openssl](https://www.openssl.org/) | Toolkit for the Transport Layer Security and Secure Sockets Layer protocols. |
+| [Tool Command Language (TCL)](https://www.tcl.tk) | Dynamic programming language suitable for web and desktop applications, networking, administration and testing. |
+| [Tk](http://www.tcl.tk/) | Graphical user interface toolkit. |
+| [Libxml2](http://xmlsoft.org/) | XML C parser and toolkit. |
+| [ Portable Hardware Locality (hwloc)](https://www.open-mpi.org/projects/hwloc/) | A portable, cross-platform abstraction of the hierarchical topology of modern architectures, including NUMA memory nodes, sockets, shared caches, cores and simultaneous multithreading. It also gathers various system attributes such as cache and memory information as well as the locality of I/O devices such as network interfaces or GPUs.|
+
+As of this writing the last version of the `hwloc` library available in the official Ubuntu Thrusty repositories does not satisfy the minimum version requirement of the Torque project, so we are going to install the latest `hwloc` version from sources.
+
+Install packages required for Torque compilation.
+```shell
+apt-get update
+apt-get install --assume-yes gcc g++ make cpuset openssl cgroup-bin \
+    libtool tcl8.6-dev tk8.6-dev libxml2-dev libcgroup-dev \
+    libhwloc-dev libboost-all-dev libssl-dev
+
+pushd .
+
+mkdir -p ~/Applications &amp;&amp; cd ~/Applications
+wget --quiet https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.4.tar.gz
+tar -xvzf hwloc-1.11.4.tar.gz
+rm hwloc-1.11.4.tar.gz
+cd hwloc-1.11.4
+./configure &amp;&amp; make install
+
+popd
+```
+
+Download and compile Torque. The command below downloads sources of the latest version of Torque, enables a subset of non-default Torque features, compiles sources and builds Torque installation packages. The names of switches for enabling extra Torque features are self-explanatory, so we are not going to cover them here. For the full list of available features refer to the [Customizing the Install](http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/1-installConfig/customizingTheInstall.htm
+) chapter in the Administrator Guide.
+
+```shell
+pushd .
+
+mkdir -p ~/Applications &amp;&amp; cd ~/Applications
+wget --quiet http://wpfilebase.s3.amazonaws.com/torque/torque-6.1.0.tar.gz
+tar -xvzf torque-6.1.0.tar.gz
+rm torque-6.1.0.tar.gz
+
+cd torque-6.1.0
+./configure --enable-gcc-warnings --enable-shared --enable-static \
+--enable-gui --enable-fast-install \
+--enable-syslog --enable-cgroups --enable-unixsockets --enable-tcl-qstat --with-scp \
+--with-server-home=/var/spool/torque \
+--with-boost-path=/usr/share/doc/libboost-all-dev \
+--with-tcl=/usr/lib/tcl8.6 --with-tclinclude=/usr/include/tcl8.6 \
+--with-tk=/usr/lib/tk8.6 --with-tkinclude=/usr/include/tcl8.6/tk-private/generic
+
+make
+make packages
+
+popd
+```
+
+Torque is originally distributed as self-extracting Bash scripts. Use the `--listfiles` switch for more information about the content of a specific package.
+```shell
+./torque-package-devel-linux-x86_x64.sh --listfiles
+```
+
+Make Torque packages available for other hosts in your network. We are going to set up [Apache HTTP server](https://httpd.apache.org/) and make packages available for download.
+
+```shell
+pushd .
+
+cd ~/Applications/torque-6.1.0
+mkdir -p /var/www/deb/amd64
+cp -rf torque-package-* /var/www/deb/amd64
+
+cd contrib/init.d
+cp -rf debian.pbs_mom /var/www/deb/amd64/pbs_mom
+cp -rf debian.pbs_server /var/www/deb/amd64/pbs_server
+cp -rf debian.trqauthd /var/www/deb/amd64/trqauthd
+
+apt-get install --assume-yes apache2
+ln -sf /var/www/deb /var/www/html/deb
+
+popd
+```
+
+The Torque packages can be downloaded using `http://{ hostname }/deb/amd64` url assuming no firewall is configured on the server host and the Apache daemon is running on the default HTTP port.
+
+### Server Setup
+
+Installing and configuring the Torque server is a multistep process similar to setting up a database server. An administrator installs packages, configures Linux deamons, sets up the Troque batch server and finally grants permissions to users. To make the process more user friendly I developed a [Bash script](/assets/vagrant/torque/server/torque-server-install-configure.sh) that performs all steps automatically.
+
+Download the script, modify the source if necessary and execute on the server machine.
+
+```shell
+./torque-server-install-configure.sh
+```
+
+The remaining part of this section explains configuration actions executed by the setup script.
+
+If the Torque server deamons are already running kill their processes.
+```shell
+if [ -z $(pgrep pbs_server) ]; then
+  killall pbs_server
+fi
+
+if [ -z $(pgrep pbs_sched) ]; then
+  killall pbs_sched
+fi
+
+if [ -z $(pgrep trqauthd) ]; then
+  killall trqauthd
+fi
+```
+
+Install the following Torque packages: `torque-package-devel-linux-x86_64.sh`, `torque-package-client-linux-x86_64.sh`, `torque-package-server-linux-x86_64.sh`. Optionally install the `torque-package-doc-linux-x86_64.sh` package which adds the Linux man pages for the Torque command line utilities.
+
+```shell
+for package_name in devel clients server
+do
+/var/www/deb/amd64/torque-package-$package_name-linux-x86_64.sh --install
+done
+```
+
+Refresh dynamic linker runtime bindings to include libraries installed in the previous step.
+```shell
+ldconfig
+```
+
+Set up the `thrqauthd`, `pbs_server` and `pbs_sched` deamons required to authenticate the Torque users, accept jobs submitted to the batch server and schedule them between the computing nodes.
+
+```shell
+for service_name in trqauthd pbs_server pbs_sched
+do
+update-rc.d -f $service_name remove
+cp -rf ~/Applications/torque-6.1.0/contrib/init.d/debian.$service_name /etc/init.d/$service_name
+update-rc.d $service_name defaults
+update-rc.d $service_name enable
+done
+```
+
+Start the `trqauthd` deamon.
+```
+service trqauthd restart
+```
+
+Grant the current user `manager` permissions to the batch server. This set of permissions is required to set up initial configuration of the batch server.
+```shell
+pushd .
+server_fdqn=`hostname -f`
+cd /var/spool/torque
+echo $server_fdqn &gt; server_name
+
+cd ./server_priv/acl_svr
+echo $server_fdqn &gt; acl_hosts
+echo $USER@$server_fdqn | tee operators managers
+
+popd
+```
+
+Set up initial configuration of the batch server. It creates a default queue named `batch` on the Torque server. User `vagrant` logged in from any host in the `cluster.org` subdomain is given the `manager` permissions to the batch server.
+
+```shell
+pbs_server -ft create
+# Starting in TORQUE 3.1 the server is multi-threaded.
+# We need to pause a second to allow the server to finish coming
+# up. If we go to qmgr right away it will fail.
+sleep 2
+pbs_server --about
+pbs_server_pid=`pgrep pbs_server`
+if [ -z &quot;$pbs_server_pid&quot; ] ; then
+  echo &quot;ERROR: pbs_server failed to start, check syslog and server logs for more information&quot;
+  exit 1;
+fi
+
+read -d '' server_config &lt;&lt; EOF
+set server managers += vagrant@*.cluster.org;
+set server operators += vagrant@*.cluster.org;
+set server scheduling = true;
+set server keep_completed = 300;
+set server mom_job_sync = true;
+EOF
+
+echo &quot;$server_config&quot; | qmgr -e
+if [ &quot;$?&quot; -ne &quot;0&quot; ] ; then
+  echo &quot;ERROR: cannot configure server&quot;;
+  qterm;
+  exit 1;
+fi
+
+read -d '' default_queue &lt;&lt; EOF 
+create queue batch;
+set queue batch queue_type = execution;
+set queue batch started = true;
+set queue batch enabled = true;
+set queue batch resources_default.walltime = 1:00:00;
+set queue batch resources_default.nodes = 1;
+set server default_queue = batch;
+EOF
+
+echo &quot;$default_queue&quot; | qmgr -e
+if [ &quot;$?&quot; -ne &quot;0&quot; ] ; then
+  echo &quot;ERROR: cannot configure default queue&quot;;
+  qterm;
+  exit 1;
+fi
+```
+
+Start the `pbs_sched` daemon responsible for assigning submitted jobs to the computing nodes.
+```shell
+service pbs_sched start
+```
+
+Optionally you can install the computing node daemon on the batch server host using the [torque-mom-install-configure.sh](/assets/vagrant/torque/server/torque-mom-install-configure.sh) script.
+```shell
+./torque-mom-install-configure.sh
+```
+
+### Mom Setup
+Adding a new computing node to the Torque cluster requires administration actions both on the batch server and the computing node.
+These actions are should be executed every time a new node is added. To make the process less error prone I recommend using the Bash script again.
+
+Execute the [torque-mom-install-configure.sh](/assets/vagrant/torque/mom/torque-mom-install-configure.sh) script on the computing node passing server hostname, server IP address and URL to the directory with Torque packages.
+
+```shell
+./torque-mom-install-configure.sh server1.torque.org 192.168.90.2 http://192.168.90.2/deb/amd64
+```
+
+The script will execute the following actions:
+1. Install packages required for running Torque.
+1. Add the batch server address and hostname to the `/etc/hosts` file if necessary.
+1. Download and install Torque packages: `torque-package-devel-linux-x86_64.sh`, `torque-package-client-linux-x86_64.sh` and `torque-package-mom-linux-x86_64.sh`.
+1. Set up `trqauthd` and `pbs_mom` deamons.
+1. Configure add the `pbs_mom` to connect the batch server.
+1. Start `trqauthd` and `pbs_mom` deamons.
+
+Run the [torque-register-mom.sh](/assets/vagrant/torque/server/torque-register-mom.sh) script on the batch server passing hostname and IP address of the computing node.
+```shell
+torque-register-mom.sh node1.torque.org 192.168.90.3
+```
+
+Restart the `pbs_server` to reload the configuration.
+```shell
+service pbs_server restart
+```
+
+Ensure the computing node is up and running by executing the following command on the batch server.
+```shell
+pbsnodes
+```
+
+### Next Steps
+
+I hope you reached the final section without troubleshooting. 
+
+Depending on the size of your computing cluster and user requirements you may consider adding extra capabilities to the Torque network. The following list contains a few example issues you may need to address. The list is by no means complete.
+
+* Consider upgrade to a commercial scheduler. They are advertised to increase job throughput of a supercomputing facility by better allocation of computing nodes. Commercial extensions also may come with extra command line utilities for example to check remaining time in the waiting queue for the specified job.
+
+* Configure control groups and CPU dynamic scaling on the computing nodes.
+
+* Mount a network drive on the computing nodes.
+
+If you found an error in the article or would like to propose an enhancement, please leave your comment below. Thank you for your time and suggestions!</content><author><name></name></author><summary type="html">Torque is an open-source cluster management system deployed in many supercomputing facilities around the world. A quick search in Google returns me a list of Torque user guides from servers in USA, UK, India and Germany on the first page. Despite wide Torque adoption and extensive Administrator Guide I found it difficult to set up a managed cluster on a dozen of computing nodes with no prior experience. Sources of my problems were no official support for Ubuntu by Adaptive Computing, the company who maintains Torque, and lack of examples for Ubuntu in the Administrator Guide. The goal for this article is to fill this gap by providing detailed setup instructions for configuration of a Torque cluster with two computing nodes running Ubuntu Trusty Tahr 14.04 LTS.</summary></entry><entry><title type="html">Job Management in Torque</title><link href="https://pmateusz.github.io/linux/torque/2017/03/16/torque-job-management.html" rel="alternate" type="text/html" title="Job Management in Torque" /><published>2017-03-16T00:00:00+00:00</published><updated>2017-03-16T00:00:00+00:00</updated><id>https://pmateusz.github.io/linux/torque/2017/03/16/torque-job-management</id><content type="html" xml:base="https://pmateusz.github.io/linux/torque/2017/03/16/torque-job-management.html">{% asset job_management_torque alt:'Torque Job Management Cover Image' %}
+
+This post provides general overview of tools for querying, filtering, cancelling and tracing of Torque jobs. &lt;!--more--&gt; The suite of command line utilities described in the article can be installed using the `torque-package-clients-linux-x86_64.sh` self-extracting script.
+
+### Querying and Filtering Jobs
+The status of batch jobs can be printed using the `qstat` program. By default it displays a list of all jobs in the queue on the server:
+```shell
+qstat queue-name@server
+
+# Output:
+Job ID                    Name             User            Time Use S Queue
+------------------------- ---------------- --------------- -------- - -----
+1.server.cluster.org      job.sh           vagrant                0 R batch
+```
+
+If the `queue-name` and `server` are skipped the jobs in the default queue and on the default server will be listed.
+
+The `S` column in the output contains the current status of a job. The list of all available states is presented in the table below.
+
+| Status | Description |
+| ------ | ----------- |
+| C	| Completed after having run |
+| E	| Exiting after having run |
+| H	| Held |
+| Q	| Queued, eligible to run or be routed |
+| R	| Running |
+| T	| Transferred to a new location |
+| W	| Waiting for execution conditions to be satisfied |
+| S | Suspended |
+
+Total number of results can be limited to jobs owned by the specified user by executing `qstat` with the `-u` option. 
+
+```shell
+qstat -u $USER
+
+# Output:
+server.cluster.org:
+                                                                                  Req\'d       Req\'d       Elap
+Job ID                  Username    Queue    Jobname          SessID  NDS   TSK   Memory      Time    S   Time
+----------------------- ----------- -------- ---------------- ------ ----- ------ --------- --------- - ---------
+1.server.cluster.org    vagrant     batch    test.sh            9038     1     24       --   00:10:00 C       --
+```
+
+`$USER` is the environment variable set to current user in the Bash shell.
+
+The columns of the table above contain the following information:
+1. the job identifier assigned by the batch server
+1. the job owner
+1. the queue in which the job currently resides
+1. the job name given by the submitter
+1. the session id if the job is running
+1. the number of nodes requested by the job
+1. the number of cpus or tasks requested by the job
+1. the amount of memory requested by the job
+1. either the cpu time, if specified, or wall time requested by the job, (hh:mm:ss)
+1. the jobs current state
+1. the amount of cpu time or wall time used by the job (hh:mm:ss)
+
+The `qstat` output can also be narrowed to a specified job or a set of jobs and displayed in a more verbose manner.
+
+``` shell
+qstat -a first-job-id second-job-id
+
+# Output:
+server.cluster.org:
+                                                                                  Req\'d       Req\'d       Elap
+Job ID                  Username    Queue    Jobname          SessID  NDS   TSK   Memory      Time    S   Time
+----------------------- ----------- -------- ---------------- ------ ----- ------ --------- --------- - ---------
+1.server.cluster.org    vagrant     batch    test.sh            9091     1     24       --   00:10:00 C       --
+```
+
+```shell
+qstat -f 1.server.cluster.org
+
+# Output:
+Job Id: 1.server.cluster.org
+    Job_Name = test.sh
+    Job_Owner = vagrant@node1.cluster.org
+    resources_used.cput = 00:00:00
+    resources_used.energy_used = 0
+    resources_used.mem = 780kb
+    resources_used.vmem = 0kb
+    resources_used.walltime = 00:00:00
+    job_state = C
+    queue = batch
+    server = server.cluster.org
+    Checkpoint = u
+    ctime = Sun Mar 19 17:39:12 2017
+    Error_Path = node1.cluster.org:/home/vagrant/test.sh.e25
+    exec_host = server.cluster.org/0
+    Hold_Types = n
+    Join_Path = n
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Sun Mar 19 17:39:21 2017
+    Output_Path = node1.cluster.org:/home/vagrant/test.sh.o25
+    Priority = 0
+    qtime = Sun Mar 19 17:39:12 2017
+    Rerunable = True
+    Resource_List.mppwidth = 24
+    Resource_List.walltime = 00:10:00
+    Resource_List.mppnodect = -1
+    Resource_List.nodes = 1
+    Resource_List.nodect = 1
+    Resource_List.neednodes = 1
+    session_id = 9091
+    substate = 59
+    Variable_List = PBS_O_QUEUE=batch,PBS_O_HOME=/home/vagrant,
+        PBS_O_LOGNAME=vagrant,
+        PBS_O_PATH=/usr/local/bin:/usr/local/sbin:/usr/local/sbin:/usr/local/
+        bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games,
+        PBS_O_MAIL=/var/mail/vagrant,PBS_O_SHELL=/bin/bash,
+        PBS_O_LANG=en_US.UTF-8,PBS_O_WORKDIR=/home/vagrant,
+        PBS_O_HOST=node1.cluster.org,PBS_O_SERVER=server
+    euser = vagrant
+    egroup = vagrant
+    hashname = 25.server.cluster.org
+    queue_rank = 2
+    queue_type = E
+    sched_hint = Unable to copy files back - please see the mother superior\'s
+        log for exact details.
+    comment = Job started on Sun Mar 19 at 17:39
+    etime = Sun Mar 19 17:39:12 2017
+    exit_status = 0
+    submit_args = test.sh
+    start_time = Sun Mar 19 17:39:12 2017
+    start_count = 1
+    fault_tolerant = False
+    comp_time = Sun Mar 19 17:39:21 2017
+    job_radix = 0
+    total_runtime = 8.200034
+    submit_host = node1.cluster.org
+    init_work_dir = /home/vagrant
+    request_version = 1
+    req_information.task_count.0 = 1
+    req_information.lprocs.0 = 1
+    req_information.thread_usage_policy.0 = allowthreads
+    req_information.hostlist.0 = server.cluster.org:ppn=1
+    req_information.task_usage.0.task.0.cpu_list = 0
+    req_information.task_usage.0.task.0.mem_list = 0
+    req_information.task_usage.0.task.0.cores = 0
+    req_information.task_usage.0.task.0.threads = 1
+    req_information.task_usage.0.task.0.host = server.cluster.org
+```
+
+`qstat` can also be used to print information about the status of a batch server, queues and allocated nodes or display results in a different format. For the full list of supported comamnd line options check the [Administration guide](http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qstat.htm) or Linux man pages.
+
+### Job Cancellation
+
+Running and queued jobs are cancelled using the `qdel` utility. Users allowed to perform this action on a job are its owner, the batch server operators and administrators.
+
+If a job is already running a SIGTERM signal is sent the process to allow graceful finish. After a preconfigured delay a SIGKILL signal is sent. The time span between these two signals is a configuration parameter of the execution queue. It can also be specified in the request using `-W` option, which takes precedence over the default value.
+
+```shell
+qdel job-id -m &quot;message&quot;
+```
+
+Cancel all jobs owned by the current user. If a job is running, send a SIGTERM signal and wait for 10 seconds before attempting to kill the process.
+```shell
+qdel all -W 10
+```
+
+For detailed explaination of flags supported by the `qdel` refer to the [Administrator guide](http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qdel.htm) or Linux man pages.
+
+### Job Troubleshooting
+
+Full information about the a Torque job track record is available using the `tracejob` utility. Executing the program as a privileged user with the `-v` flag allows to locate the computing node assigned by the scheduling process, which may be useful for debugging configuration issues.
+
+```shell
+sudo tracejob -v job-id
+ 
+# Output:
+/var/spool/torque/server_priv/accounting/20170320: Successfully located matching job records
+/var/spool/torque/server_logs/20170320: Successfully located matching job records
+/var/spool/torque/mom_logs/20170320: No such file or directory
+/var/spool/torque/sched_logs/20170320: Successfully located matching job records
+
+Job: server.torque.org
+
+03/20/2017 14:26:52.274 S    enqueuing into batch, state 1 hop 1
+03/20/2017 14:26:52.529 S    Job Modified at request of
+                          root@server.torque.org
+03/20/2017 14:26:52.556 L    Job Run
+03/20/2017 14:26:52.530 S    Job Run at request of
+                          root@server.torque.org
+03/20/2017 14:26:52.556 S    Not sending email: User does not want mail of this
+                          type.
+03/20/2017 14:26:52  A    queue=batch
+03/20/2017 14:26:52  A    user=user group=user jobname=test.sh
+                          queue=batch ctime=1490020012 qtime=1490020012
+                          etime=1490020012 start=1490020012
+                          owner=user@server.torque.org
+                          exec_host=node.torque.ccds.org/0
+                          Resource_List.nodes=1:ppn=1 Resource_List.mem=16mb
+                          Resource_List.walltime=00:10:00
+                          Resource_List.host=XXX.XX.XX.XX
+                          Resource_List.nodect=1 Resource_List.neednodes=1:ppn=1
+```
+
+Hopefully, you will not have to use this command often.</content><author><name></name></author><summary type="html">This post provides general overview of tools for querying, filtering, cancelling and tracing of Torque jobs.</summary></entry></feed>

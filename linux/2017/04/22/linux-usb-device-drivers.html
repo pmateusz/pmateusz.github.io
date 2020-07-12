@@ -1,0 +1,389 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Device Drivers Installation on Linux | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Device Drivers Installation on Linux" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Linux operating system family has not yet came with a robust solution to automatically detect missing drivers and install relevant firmware in the background. Fortune favours the bold, so don’t be discouraged by the lack of this feature. This post aims to provide you with general purpose instructions how to find packages with drivers that are required by your hardware assuming firmware is available for your Linux distribution." />
+<meta property="og:description" content="Linux operating system family has not yet came with a robust solution to automatically detect missing drivers and install relevant firmware in the background. Fortune favours the bold, so don’t be discouraged by the lack of this feature. This post aims to provide you with general purpose instructions how to find packages with drivers that are required by your hardware assuming firmware is available for your Linux distribution." />
+<link rel="canonical" href="http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html" />
+<meta property="og:url" content="http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-22T00:00:00+01:00" />
+<script type="application/ld+json">
+{"description":"Linux operating system family has not yet came with a robust solution to automatically detect missing drivers and install relevant firmware in the background. Fortune favours the bold, so don’t be discouraged by the lack of this feature. This post aims to provide you with general purpose instructions how to find packages with drivers that are required by your hardware assuming firmware is available for your Linux distribution.","@type":"BlogPosting","headline":"Device Drivers Installation on Linux","dateModified":"2017-04-22T00:00:00+01:00","datePublished":"2017-04-22T00:00:00+01:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html"},"url":"http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Device Drivers Installation on Linux</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/linux/">Linux</a>
+		</span>
+	
+	<span class="post-date">April 22, 2017</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/tp_link_card-086a1f0215ab91c86a40fa36533d0702f89c7c9dd9b86c34f72d3e99136b358f.png" /></p>
+
+<p>Linux operating system family has not yet came with a robust solution to automatically detect missing drivers and install relevant firmware in the background. Fortune favours the bold, so don’t be discouraged by the lack of this feature. This post aims to provide you with general purpose instructions how to find packages with drivers that are required by your hardware assuming firmware is available for your Linux distribution. <!--more--></p>
+
+<p>Let’s take a popular USB network card as an example.</p>
+
+<h2 id="tutorial">Tutorial</h2>
+
+<ol>
+  <li>
+    <p>Plug off the network card from the USB port, get a coffee and plug it back.</p>
+  </li>
+  <li>
+    <p>Open a terminal window and print the latest messages in the kernel ring buffer using the <code class="highlighter-rouge">dmesg</code> command.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dmesg
+<span class="o">[</span>  405.865412] usb 2-2: USB disconnect, device number 2
+<span class="o">[</span>  442.751965] usb 2-2: new high-speed USB device number 11 using xhci_hcd
+<span class="o">[</span>  442.952428] usb 2-2: New USB device found, <span class="nv">idVendor</span><span class="o">=</span>0cf3, <span class="nv">idProduct</span><span class="o">=</span>9271
+<span class="o">[</span>  442.952431] usb 2-2: New USB device strings: <span class="nv">Mfr</span><span class="o">=</span>16, <span class="nv">Product</span><span class="o">=</span>32, <span class="nv">SerialNumber</span><span class="o">=</span>48
+<span class="o">[</span>  442.952433] usb 2-2: Product: USB2.0 WLAN
+<span class="o">[</span>  442.952434] usb 2-2: Manufacturer: ATHEROS
+<span class="o">[</span>  442.952435] usb 2-2: SerialNumber: 12345
+<span class="o">[</span>  442.952973] usb 2-2: ath9k_htc: Firmware htc_9271.fw requested
+<span class="o">[</span>  442.953077] usb 2-2: firmware: failed to load htc_9271.fw <span class="o">(</span><span class="nt">-2</span><span class="o">)</span>
+<span class="o">[</span>  442.953080] usb 2-2: Direct firmware load failed with error <span class="nt">-2</span>
+<span class="o">[</span>  442.953081] usb 2-2: Falling back to user helper
+<span class="o">[</span>  442.953636] usb 2-2: ath9k_htc: USB layer deinitialized
+</code></pre></div>    </div>
+
+    <p>The console output contains a name of the firmware <code class="highlighter-rouge">htc_9271.fw</code> which has not been successfully loaded.</p>
+
+    <p>If you are not such lucky to find relevant names here. Try the manufacturer or the engineering name for your product which may be different from the marketing name.</p>
+
+    <p>Use the <code class="highlighter-rouge">lsusb</code> command to check the name of device connected to USB port and review messages logged to <code class="highlighter-rouge">/var/log/syslog</code>.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lsusb
+<span class="nb">sudo tail</span> <span class="nt">-f</span> /var/log/syslog
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Find relevant package name for your Linux distribution in the package search using the firmware name. The following links point to <a href="https://www.debian.org/distrib/packages">Debian</a> and <a href="http://packages.ubuntu.com/">Ubuntu</a> package search respectively.</p>
+
+    <p>Instead of the package search on website you may use the Debian REST API directly.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Endpoint</th>
+          <th>Operation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>https://packages.debian.org/<code class="highlighter-rouge">name</code></td>
+          <td>Search on package names</td>
+        </tr>
+        <tr>
+          <td>https://packages.debian.org/src:<code class="highlighter-rouge">name</code></td>
+          <td>Search on source package names</td>
+        </tr>
+        <tr>
+          <td>https://packages.debian.org/file:<code class="highlighter-rouge">path</code></td>
+          <td>Search for paths ending in the keyword</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>If you don’t get any meaningful results by search on package names, consider advanced search on package directories or the contents of packages. Indeed, in the tutorial example <code class="highlighter-rouge">htc_9271.fw</code> the relevant package can be found using the last option: <a href="https://packages.debian.org/file:htc_9271.fw">https://packages.debian.org/file:htc_9271.fw</a>.</p>
+  </li>
+  <li>
+    <p>Open the <a href="https://packages.debian.org/jessie/firmware-atheros">firmware-atheros package description</a> from the search results.</p>
+
+    <p>You should quickly spot the <strong>non-free</strong> label next to the package name. Packages marked with this tag do not comply with Debian Free Software Guidelines (DFSG) or were not assessed for such compliance. It is often the case for a third-party device drivers, especially if their codebase is not available open source.</p>
+
+    <p>It is still possible to install packages marked as non-free using the <code class="highlighter-rouge">apt-get</code> tool chain. However, it requires a prior update of the package manager configuration, because by default third-party packages are not mentioned in the list of available sources in the package repository.</p>
+  </li>
+  <li>
+    <p>Enable the <code class="highlighter-rouge">non-free</code> source in official package repositories by editing the <code class="highlighter-rouge">sources.list</code> file.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>vim /etc/apt/sources.list
+</code></pre></div>    </div>
+
+    <p>After your changes the <code class="highlighter-rouge">sources.list</code> file should resemble the following example.</p>
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>deb http://httpredir.debian.org/debian jessie main contrib non-free
+deb-src http://httpredir.debian.org/debian jessie main contrib non-free
+deb http://httpredir.debian.org/debian jessie-updates main contrib non-free
+deb-src http://httpredir.debian.org/debian jessie-updates main contrib non-free
+deb http://security.debian.org/ jessie/updates main contrib non-free
+deb-src http://security.debian.org/ jessie/updates main contrib non-free
+deb http://httpredir.debian.org/debian jessie-backports main contrib non-free
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Update the list of packages and install the <code class="highlighter-rouge">firmware-atheros</code> package.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get update
+<span class="nb">sudo </span>apt-get <span class="nb">install </span>firmware-atheros
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Disconnect the USB network card and plug it again. If your network card is equipped with a status diode, it should start blinking.</p>
+  </li>
+  <li>
+    <p>Finally, print the latest kernel messages to confirm that the firmware has been successfully loaded.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span> 6972.212991] usb 2-2: new high-speed USB device number 12 using xhci_hcd
+<span class="o">[</span> 6972.413663] usb 2-2: New USB device found, <span class="nv">idVendor</span><span class="o">=</span>0cf3, <span class="nv">idProduct</span><span class="o">=</span>9271
+<span class="o">[</span> 6972.413666] usb 2-2: New USB device strings: <span class="nv">Mfr</span><span class="o">=</span>16, <span class="nv">Product</span><span class="o">=</span>32, <span class="nv">SerialNumber</span><span class="o">=</span>48
+<span class="o">[</span> 6972.413667] usb 2-2: Product: USB2.0 WLAN
+<span class="o">[</span> 6972.413668] usb 2-2: Manufacturer: ATHEROS
+<span class="o">[</span> 6972.413669] usb 2-2: SerialNumber: 12345
+<span class="o">[</span> 6972.414213] usb 2-2: ath9k_htc: Firmware htc_9271.fw requested
+<span class="o">[</span> 6972.414345] usb 2-2: firmware: direct-loading firmware htc_9271.fw
+<span class="o">[</span> 6972.697655] usb 2-2: ath9k_htc: Transferred FW: htc_9271.fw, size: 51272
+<span class="o">[</span> 6972.935153] ath9k_htc 2-2:1.0: ath9k_htc: HTC initialized with 33 credits
+<span class="o">[</span> 6973.200832] ath9k_htc 2-2:1.0: ath9k_htc: FW Version: 1.3
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>I hope this example contributed to better understanding of Linux device drivers ecosystem and provided you with a set of clues ready to use while investigating missing driver issues.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/linux/2017/04/15/linux-productivity-tips.html">&laquo; Linux Productivity Tricks and Tips</a>
+			
+			
+				<a class="next" href="/linux/2017/05/20/linux-managing-remote-machines.html">Scalable and Cost Effective Linux Administration &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Device%20Drivers%20Installation%20on%20Linux&url=http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html&description=&title=Device%20Drivers%20Installation%20on%20Linux?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html&title=Device%20Drivers%20Installation%20on%20Linux&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/linux/2017/04/22/linux-usb-device-drivers.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

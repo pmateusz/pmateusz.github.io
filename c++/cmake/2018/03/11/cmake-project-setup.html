@@ -1,0 +1,624 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>CMake Project with Third-party Dependencies | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="CMake Project with Third-party Dependencies" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Setting up a build for a new software project requires foresight and experience. Decisions made at this step influence compilation time and effort needed to configure a development machine. Having in mind that there is no replacement for practice, this article aims at providing a baseline configuration for other a C or C++ projects that will be built using CMake. The post targets persons who did not cut their teeth on CMake and consider it as the build tool in their own project." />
+<meta property="og:description" content="Setting up a build for a new software project requires foresight and experience. Decisions made at this step influence compilation time and effort needed to configure a development machine. Having in mind that there is no replacement for practice, this article aims at providing a baseline configuration for other a C or C++ projects that will be built using CMake. The post targets persons who did not cut their teeth on CMake and consider it as the build tool in their own project." />
+<link rel="canonical" href="http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html" />
+<meta property="og:url" content="http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-03-11T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"Setting up a build for a new software project requires foresight and experience. Decisions made at this step influence compilation time and effort needed to configure a development machine. Having in mind that there is no replacement for practice, this article aims at providing a baseline configuration for other a C or C++ projects that will be built using CMake. The post targets persons who did not cut their teeth on CMake and consider it as the build tool in their own project.","@type":"BlogPosting","headline":"CMake Project with Third-party Dependencies","dateModified":"2018-03-11T00:00:00+00:00","datePublished":"2018-03-11T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html"},"url":"http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>CMake Project with Third-party Dependencies</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/c/">C++</a>
+		</span>
+	
+		<span class="blog-filter">
+			<a href="/category/cmake/">Cmake</a>
+		</span>
+	
+	<span class="post-date">March 11, 2018</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/cmake_clion_integration-06d0b1a77795ec2258c287fa108e64cc9020a5d01e7d85a8e08eb1077108cc57.png" /></p>
+
+<p>Setting up a build for a new software project requires foresight and experience. Decisions made at this step influence compilation time and effort needed to configure a development machine. Having in mind that there is no replacement for practice, this article aims at providing a baseline configuration for other a C or C++ projects that will be built using CMake. The post targets persons who did not cut their teeth on CMake and consider it as the build tool in their own project.</p>
+
+<!--more-->
+
+<h2 id="introduction">Introduction</h2>
+
+<p><a href="https://cmake.org/">CMake</a> is a cross platform and open source tool for building C/C++ projects. CMake works by generating a collection of make files based on the project definition contained in the <code class="highlighter-rouge">CMakeLists.txt</code> file. The project definition is expressed using a domain specific language that CMake interprets. Apart from traditional constructs offered in any programming language, such as assignment instruction, control flow statements, loops or function definition, CMake supports an extensive list of predefined functions. They serve two major purposes: hiding platform specific aspects of a build definition and simplifying common tasks that are often required to build a project. Examples of both could be file system operations and finding libraries. Make files generated by CMake are then processed by the <code class="highlighter-rouge">make</code> tool to build a project.</p>
+
+<p>In the following sections we present a basic CMake build configuration for a C/C++ project that depends on third-party libraries. As the use case we will create CMake files to build a program that uses the SCIP Optimization Suite, a collection of libraries for solving constraint integer optimization problems. The exact application of the program itself is not relevant in our context, though the list of engineering tasks we are going to solve is a good representation of what you may face in setting up a build configuration for any C or C++ project yourself. For simplicity we assume that all required dependencies are installed in the system. If this assumption does not hold, we expect CMake to fail with a meaningful error message. Although it is possible to develop a CMake configuration that will download missing dependencies, we will not cover this subject here to maintain the introductory level of the post. If you would like to learn more on that, we refer you to the <a href="https://cmake.org/cmake/help/v3.11/module/ExternalProject.html">ExternalProject_Add</a> function in the official CMake documentation.</p>
+
+<p>The CMake configuration that will be developed in this tutorial is available at <a href="https://github.com/pmateusz/examples/tree/master/cmake_sample_project">GitHub</a>. You may either follow the tutorial below step by step or download the sample code upfront. The following command will download all files created in this tutorial and save them into the <strong>scip-example</strong> directory.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>svn <span class="nb">export </span>https://github.com/pmateusz/examples/trunk/cmake_sample_project scip-example
+</code></pre></div></div>
+
+<p>This tutorial was created using Debian Stretch. If you use a different operating system you may need to modify commands that install packages and their names in the prerequisites section.</p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+<ol>
+  <li>Install CMake, g++ and external libraries required by SCIP.
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install</span> <span class="nt">--assume-yes</span> bison build-essential cmake flex g++ libgmp-dev libreadline-dev libncurses-dev zlib1g-dev
+</code></pre></div>    </div>
+  </li>
+  <li>Download and install SCIP.
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget http://scip.zib.de/download/release/SCIPOptSuite-5.0.1-Linux.deb
+<span class="nb">sudo </span>dpkg <span class="nt">--install</span> SCIPOptSuite-5.0.1-Linux.deb
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="tutorial">Tutorial</h2>
+<ol>
+  <li>Create a directory for the project and open it in a command prompt.
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>scip-example <span class="o">&amp;&amp;</span> <span class="nb">cd </span>scip-example
+</code></pre></div>    </div>
+  </li>
+  <li>Create subdirectories for the source code and CMake modules.
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>src
+<span class="nb">mkdir</span> <span class="nt">-p</span> cmake/Modules
+</code></pre></div>    </div>
+
+    <p>Source code and header files will be located in the <code class="highlighter-rouge">src</code> directory. CMake modules, which are responsible for finding third-party libraries, will be stored in the <code class="highlighter-rouge">cmake/Modules</code> directory.</p>
+  </li>
+  <li>
+    <p>Download the project source code from <a href="https://github.com/pmateusz/examples/tree/master/cmake_sample_project/src">GitHub</a>.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for </span>file <span class="k">in </span>cmain.c relax_lp.c relax_lp.h relax_nlp.c relax_nlp.h
+<span class="k">do
+</span>wget https://raw.githubusercontent.com/pmateusz/examples/master/cmake_sample_project/src/<span class="nv">$file</span> <span class="nt">-P</span> src
+<span class="k">done</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Create the <code class="highlighter-rouge">CMakeLists.txt</code> file with the following content.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cmake_minimum_required</span><span class="p">(</span>VERSION 3.1 FATAL_ERROR<span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span>demo LANGUAGES C CXX VERSION 0.0.1<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_VERBOSE_MAKEFILE FALSE<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_CXX_STANDARD 11<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_CXX_STANDARD_REQUIRED ON<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_POSITION_INDEPENDENT_CODE ON<span class="p">)</span>
+<span class="nb">if</span> <span class="p">(</span>CMAKE_COMPILER_IS_GNUCXX<span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_C_FLAGS_DEBUG <span class="s2">"-g -ggdb -pg -fsanitize=undefined"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_C_FLAGS_RELEASE <span class="s2">"-O2"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_CXX_FLAGS_DEBUG <span class="si">${</span><span class="nv">CMAKE_C_FLAGS_DEBUG</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_CXX_FLAGS_RELEASE <span class="si">${</span><span class="nv">CMAKE_C_FLAGS_RELEASE</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_BUILD_TYPE RELEASE<span class="p">)</span>
+<span class="nb">list</span><span class="p">(</span>APPEND CMAKE_MODULE_PATH <span class="s2">"</span><span class="si">${</span><span class="nv">CMAKE_SOURCE_DIR</span><span class="si">}</span><span class="s2">/cmake/Modules/"</span><span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Scip REQUIRED<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Threads REQUIRED<span class="p">)</span>
+<span class="nb">get_filename_component</span><span class="p">(</span>HEADERS src REALPATH<span class="p">)</span>
+<span class="nb">include_directories</span><span class="p">(</span><span class="si">${</span><span class="nv">HEADERS</span><span class="si">}</span> <span class="si">${</span><span class="nv">SCIP_INCLUDE_DIRS</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">file</span><span class="p">(</span>GLOB_RECURSE SOURCES src/*.c<span class="p">)</span>
+<span class="nb">add_library</span><span class="p">(</span>demo STATIC <span class="si">${</span><span class="nv">SOURCES</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">add_executable</span><span class="p">(</span>demo-main src/cmain.c<span class="p">)</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span>demo-main demo <span class="si">${</span><span class="nv">SCIP_LIBRARIES</span><span class="si">}</span> <span class="si">${</span><span class="nv">CMAKE_THREAD_LIBS_INIT</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">add_dependencies</span><span class="p">(</span>demo-main demo<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <h3 id="comments">Comments</h3>
+    <p>We will now review the file line by line and highlight important concepts.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cmake_minimum_required</span><span class="p">(</span>VERSION 3.1 FATAL_ERROR<span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span>demo LANGUAGES C CXX VERSION 0.0.1<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_VERBOSE_MAKEFILE FALSE<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Require CMake in version 3.1 or newer.
+Define a project called <strong>demo</strong> that requires C and C++ compilers. Project deliverables will have version 0.0.1.
+Generate non verbose make files. If you change the parameter to TRUE, make files will print the current command before its execution, which could be priceless while troubleshooting build related issues.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">set</span><span class="p">(</span>CMAKE_CXX_STANDARD 11<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_CXX_STANDARD_REQUIRED ON<span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_POSITION_INDEPENDENT_CODE ON<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Generate make files that compile source code with C++11 standard enabled in a compiler. In case of <code class="highlighter-rouge">g++</code> that boils down to adding the <code class="highlighter-rouge">-std=c++11</code> flag to the compiler arguments. The same technique will not work with MSVC. Always be mindful about possible cross platform issues that hard coding parameters may cause. To avoid them use CMake features whenever possible.</p>
+
+    <p>Code produced by a compiler should be position independent, so the shared libraries built in the project will execute correctly regardless of the memory location where they have been loaded to.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">if</span> <span class="p">(</span>CMAKE_COMPILER_IS_GNUCXX<span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_C_FLAGS_DEBUG <span class="s2">"-g -ggdb -pg -fsanitize=undefined"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_C_FLAGS_RELEASE <span class="s2">"-O2"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_CXX_FLAGS_DEBUG <span class="si">${</span><span class="nv">CMAKE_C_FLAGS_DEBUG</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>CMAKE_CXX_FLAGS_RELEASE <span class="si">${</span><span class="nv">CMAKE_C_FLAGS_RELEASE</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+<span class="nb">set</span><span class="p">(</span>CMAKE_BUILD_TYPE RELEASE<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>We set extra compiler flags that should be used when compiling the project. Files with the <code class="highlighter-rouge">.c</code> extension will use the C compiler, while files with <code class="highlighter-rouge">.cxx</code> or <code class="highlighter-rouge">.cpp</code> extensions will be compiled by the C++ compiler.</p>
+
+    <p>The build target is set to <code class="highlighter-rouge">RELEASE</code>, so the <code class="highlighter-rouge">-O2</code> flag, which as of this writing is the recommended optimization level for <code class="highlighter-rouge">GCC</code>, will be used. If you change the build type to <code class="highlighter-rouge">DEBUG</code> flags <code class="highlighter-rouge">-g -ggdb -pg -fsanitize=undefined</code> will be passed instead. Debug symbols will be added, extra debugging information will be produced to improve debugging experience in <code class="highlighter-rouge">GDB</code>, extra tracing instructions for <code class="highlighter-rouge">gprof</code> will be produced to enable profiling the code. Finally, additional checks will be run to detect situations which lead to undefined behaviors, such as null pointer dereference or arithmetic overflows. To read more about undefined behavior sanitizer see the <a href="https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan/">Red Hat blog post</a> or <a href="https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html">Clang</a> documentation.</p>
+
+    <p>Notice that these flags are passed only for the <code class="highlighter-rouge">GNU GCC</code> compiler, which protects us from running into cross platform issues.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">list</span><span class="p">(</span>APPEND CMAKE_MODULE_PATH <span class="s2">"</span><span class="si">${</span><span class="nv">CMAKE_SOURCE_DIR</span><span class="si">}</span><span class="s2">/cmake/Modules/"</span><span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Instruct CMake where to find additional scripts that find third-party libraries. These scripts are also known as modules and will be developed in the upcoming sections.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">find_package</span><span class="p">(</span>Scip REQUIRED<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Threads REQUIRED<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Look for the <code class="highlighter-rouge">Scip</code> library and the system threading model. In case any of the dependencies is not satisfied stop generating make files and fail with an error. While searching for a library CMake first tries to load a <code class="highlighter-rouge">FindLibraryName.cmake</code> file, where <code class="highlighter-rouge">LibraryName</code> is the name of a library passed in the <code class="highlighter-rouge">find_package</code> function, and then interprets its content. Regardless of the operating system library names in CMake are case sensitive. If in doubt double check that you are using a library name in the correct form.</p>
+
+    <p>The CMake scripts interpreted by the <code class="highlighter-rouge">find_package</code> function export new variables that point to the library binaries and header files. By convention the path to a symbolic object or an archive is stored in the<code class="highlighter-rouge">LIBRARYNAME_LIB</code> variable, where <code class="highlighter-rouge">LIBRARYNAME</code> is the name of the library in capital letters. For example, <code class="highlighter-rouge">find_package(Scip REQUIRED)</code> should create a variable <code class="highlighter-rouge">SCIP_LIB</code> with a binary file of the library. Header file location is saved in the variable <code class="highlighter-rouge">LIBRARYNAME_INCLUDE_DIR</code>. Unfortunately, the naming convention for CMake modules is not strictly followed, even inside the CMake project, so before reusing any official module consider reading its <code class="highlighter-rouge">documentation</code>(https://cmake.org/cmake/help/latest/manual/cmake-modules.7.html).</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">get_filename_component</span><span class="p">(</span>HEADERS src REALPATH<span class="p">)</span>
+<span class="nb">include_directories</span><span class="p">(</span><span class="si">${</span><span class="nv">HEADERS</span><span class="si">}</span> <span class="si">${</span><span class="nv">SCIP_INCLUDE_DIRS</span><span class="si">}</span><span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Resolve a relative path to the <code class="highlighter-rouge">src</code> directory to an absolute path and save it as the value of the <code class="highlighter-rouge">HEADERS</code> variable. Then declare header files’ locations. Apart from the local header files, we also declare the header files of the SCIP library and its dependencies saved in the <code class="highlighter-rouge">SCIP_INCLUDE_DIRS</code> variable.</p>
+
+    <p>You may notice that values of CMake variables are referenced using the <code class="highlighter-rouge">${...}</code> operator.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">file</span><span class="p">(</span>GLOB_RECURSE SOURCES src/*.c<span class="p">)</span>
+<span class="nb">add_library</span><span class="p">(</span>demo STATIC <span class="si">${</span><span class="nv">SOURCES</span><span class="si">}</span><span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Set paths to all local source code files as the value of the <code class="highlighter-rouge">SOURCES</code> variable and create a statically linked library with them. Notice that the first argument in the <code class="highlighter-rouge">add_library</code> function, which corresponds to a library name, matches the project name. It will be the default build target of the project.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">add_executable</span><span class="p">(</span>demo-main src/cmain.c<span class="p">)</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span>demo-main demo <span class="si">${</span><span class="nv">SCIP_LIBRARIES</span><span class="si">}</span> <span class="si">${</span><span class="nv">CMAKE_THREAD_LIBS_INIT</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">add_dependencies</span><span class="p">(</span>demo-main demo<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Declare another project target to build an executable from the <code class="highlighter-rouge">src/cmain.c</code> file. The executable will be linked against the project sources, the SCIP library, its dependencies and the threading model.</p>
+
+    <p>A prerequisite for successful linking of the <code class="highlighter-rouge">demo-main</code> target is availability of the local library build in the <code class="highlighter-rouge">demo</code> target. This dependency is declared using the <code class="highlighter-rouge">add_dependencies</code> function.</p>
+  </li>
+  <li>
+    <p>Develop a CMake modules for the <a href="https://www.gnu.org/software/termutils/manual/termcap-1.3/termcap.html">Termcap</a> library and the <a href="https://gmplib.org/">GNU Multiple Precision Library</a>.</p>
+
+    <p>Create the <code class="highlighter-rouge">FindTermcap.cmake</code> file in the <code class="highlighter-rouge">cmake/Modules</code> directory with the following content.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">find_path</span><span class="p">(</span>TERMCAP_INCLUDE_DIR termcap.h<span class="p">)</span>
+<span class="nb">find_library</span><span class="p">(</span>TERMCAP_LIBRARY termcap<span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span>FindPackageHandleStandardArgs<span class="p">)</span>
+<span class="nf">find_package_handle_standard_args</span><span class="p">(</span>TERMCAP DEFAULT_MSG TERMCAP_LIBRARY TERMCAP_INCLUDE_DIR<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <h3 id="comments-1">Comments</h3>
+    <p>CMake modules of these libraries will be developed first, because their structure is simple and similar to each other. We will reduce complexity of CMake modules to bare minimum, since you are unlikely to compile these libraries yourself. Both libraries have their official packages available for most Unix-like operating systems. Moreover the first versions of each library was released in 90’, so their API is mature and codebase stable.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">find_path</span><span class="p">(</span>TERMCAP_INCLUDE_DIR termcap.h<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Search for the <code class="highlighter-rouge">termcap.h</code> header file using the <code class="highlighter-rouge">find_path</code> function that assigns the absolute path to the directory containing the file name to the first variable passed to the function. Note that we rely on CMake to check common header files’ locations in the operating system by not passing any suggested directories. This behavior should work well as soon as header files can be found in one of common locations.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">find_library</span><span class="p">(</span>TERMCAP_LIBRARY termcap<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Find a library with the <code class="highlighter-rouge">termcap</code> stem. CMake will not have problems with detecting that libtermcap.a or libtermcap.so are an archive and a shared object of the Termcap library respectively. This capability is built into CMake, because library prefixes and their file extensions depend on the operating system. By default if both an archive and a shared object are available, CMake will prefer the shared object.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">include</span><span class="p">(</span>FindPackageHandleStandardArgs<span class="p">)</span>
+<span class="nf">find_package_handle_standard_args</span><span class="p">(</span>TERMCAP DEFAULT_MSG TERMCAP_LIBRARY TERMCAP_INCLUDE_DIR<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Import the <code class="highlighter-rouge">FindPackageHandleStandardArgs</code> module. This module contains the <code class="highlighter-rouge">find_package_handle_standard_args</code> function, which should be called with variables denoting the package name, a failure message and variables that should be returned to the caller. The <code class="highlighter-rouge">DEFAULT_MSG</code> parameter means that the default failure message format will be used if required.</p>
+
+    <p>We skip the <code class="highlighter-rouge">FindGMP.cmake</code> module, because its structure strictly follows the <code class="highlighter-rouge">FindTermcap.cmake</code> module.</p>
+
+    <p>Both modules developed in this section can be downloaded using the command.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for </span>file <span class="k">in </span>FindTermcap.cmake FindGMP.cmake
+<span class="k">do
+</span>wget https://raw.githubusercontent.com/pmateusz/examples/master/cmake_sample_project/cmake/Modules/<span class="nv">$file</span> <span class="nt">-P</span> cmake/Modules
+<span class="k">done</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Create the <code class="highlighter-rouge">FindReadline.cmake</code> file in the <code class="highlighter-rouge">cmake/Modules</code> directory with the following content.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">find_path</span><span class="p">(</span>READLINE_INCLUDE_DIR readline/readline.h<span class="p">)</span>
+<span class="nb">find_library</span><span class="p">(</span>_READLINE_LIB readline<span class="p">)</span>
+<span class="nb">if</span> <span class="p">(</span>NOT _READLINE_LIB<span class="p">)</span>
+ <span class="nb">message</span><span class="p">(</span>FATAL_ERROR <span class="s2">"Not found libreadline.a"</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+<span class="nb">find_library</span><span class="p">(</span>_HISTORY_LIB history<span class="p">)</span>
+<span class="nb">if</span> <span class="p">(</span>NOT _HISTORY_LIB<span class="p">)</span>
+ <span class="nb">message</span><span class="p">(</span>FATAL_ERROR <span class="s2">"Not found libhistory.a"</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+<span class="nb">set</span><span class="p">(</span>READLINE_LIBRARY <span class="si">${</span><span class="nv">_READLINE_LIB</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">list</span><span class="p">(</span>APPEND READLINE_LIBRARY <span class="si">${</span><span class="nv">_HISTORY_LIB</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">mark_as_advanced</span><span class="p">(</span>_READLINE_LIB _HISTORY_LIB<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Curses REQUIRED<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Termcap REQUIRED<span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span>FindPackageHandleStandardArgs<span class="p">)</span>
+<span class="nf">find_package_handle_standard_args</span><span class="p">(</span>READLINE DEFAULT_MSG READLINE_LIBRARY READLINE_INCLUDE_DIR<span class="p">)</span>
+<span class="nb">if</span> <span class="p">(</span>READLINE_FOUND<span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>READLINE_LIBRARIES <span class="si">${</span><span class="nv">READLINE_LIBRARY</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">list</span><span class="p">(</span>APPEND READLINE_LIBRARIES <span class="si">${</span><span class="nv">CURSES_LIBRARIES</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">list</span><span class="p">(</span>APPEND READLINE_LIBRARIES <span class="si">${</span><span class="nv">TERMCAP_LIBRARY</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>READLINE_INCLUDE_DIRS <span class="si">${</span><span class="nv">READLINE_INCLUDE_DIR</span><span class="si">}</span> <span class="si">${</span><span class="nv">CURSES_INCLUDE_DIR</span><span class="si">}</span> <span class="si">${</span><span class="nv">TERMCAP_INCLUDE_DIR</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+</code></pre></div>    </div>
+
+    <h3 id="comments-2">Comments</h3>
+    <p>The Readline library also has an official package with its binaries. Albeit, its CMake module is more complex. Readlines is distributed as 2 files: <code class="highlighter-rouge">readline</code> and <code class="highlighter-rouge">history</code>, which further depend on libraries: Curses and Termcap.</p>
+
+    <p>Handling a library that is distributed via multiple binary files is a three step process. Firstly, find a file path to every file or fail if it cannot be found. Then create a variable that contains a list of all file paths separated by semicolon. Note that the <code class="highlighter-rouge">list</code> function facilitates handling such variables. Finally, mark the temporary variables used to find the binary files as advanced variables. That will instruct third-party tools that offer CMake integration that these variables are helper variables, which should remain hidden and unavailable for an external assignment.</p>
+
+    <p>Find the library dependencies. Export their binaries and header files using extra variables: <code class="highlighter-rouge">READLINE_LIBRARIES</code> and <code class="highlighter-rouge">READLINE_INCLUDE_DIRS</code> respectively.</p>
+  </li>
+  <li>
+    <p>Create the <code class="highlighter-rouge">FindSoplex.cmake</code> file in the <code class="highlighter-rouge">cmake/Modules</code> directory with the following content.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">if</span> <span class="p">(</span>SOPLEX_ROOT_DIR<span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SOPLEX_INCLUDE_LOCATIONS <span class="s2">" </span><span class="si">${</span><span class="nv">SOPLEX_ROOT_DIR</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SOPLEX_LIB_LOCATIONS <span class="s2">"</span><span class="si">${</span><span class="nv">SOPLEX_ROOT_DIR</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">else</span> <span class="p">()</span>
+ <span class="nb">set</span><span class="p">(</span>SOPLEX_ROOT_DIR <span class="s2">""</span> CACHE PATH <span class="s2">"Folder contains Soplex library"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SOPLEX_INCLUDE_LOCATIONS <span class="s2">""</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SOPLEX_LIB_LOCATIONS <span class="s2">""</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+<span class="nb">find_path</span><span class="p">(</span>SOPLEX_INCLUDE_DIR soplex.h HINTS <span class="si">${</span><span class="nv">_SOPLEX_INCLUDE_LOCATIONS</span><span class="si">}</span> PATH_SUFFIXES src<span class="p">)</span>
+<span class="nb">find_library</span><span class="p">(</span>SOPLEX_LIBRARY soplex HINTS <span class="si">${</span><span class="nv">_SOPLEX_LIB_LOCATIONS</span><span class="si">}</span> PATH_SUFFIXES lib<span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span>FindPackageHandleStandardArgs<span class="p">)</span>
+<span class="nf">find_package_handle_standard_args</span><span class="p">(</span>SOPLEX DEFAULT_MSG SOPLEX_LIBRARY SOPLEX_INCLUDE_DIR<span class="p">)</span>
+<span class="nb">mark_as_advanced</span><span class="p">(</span>_SOPLEX_INCLUDE_LOCATIONS _SOPLEX_LIB_LOCATIONS<span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>Soplex is an example of a library that does not have an official installation package. In prerequisites of this tutorial we downloaded a package with this library from a third-party source. However, we might as well compile the library from sources and install it in a custom location. To retain such flexibility define an optional <code class="highlighter-rouge">SOPLEX_ROOT_DIR</code> variable which, if assigned, will point to the root directory of the Soplex project. This location is passed to <code class="highlighter-rouge">find_path</code> and <code class="highlighter-rouge">find_library</code> functions as the <code class="highlighter-rouge">HINTS</code> parameter. It has a priority over other paths that CMake may otherwise search to find a file or a binary. Note that we also use the <code class="highlighter-rouge">PATH_SUFFIXES</code> parameter to pass information about subdirectories of the main location where a file or a library could be found. For example, the Soplex project stores source files in the <code class="highlighter-rouge">src</code> subdirectory, which is in turn is used as the path suffix in the <code class="highlighter-rouge">find_path</code> function.</p>
+
+    <p>Other structures have been explained already in the previous steps.</p>
+  </li>
+  <li>
+    <p>Create the <code class="highlighter-rouge">FindScip.cmake</code> file in the <code class="highlighter-rouge">cmake/Modules</code> directory with the following content.</p>
+
+    <div class="language-cmake highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">if</span> <span class="p">(</span>SCIP_ROOT_DIR<span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SCIP_INCLUDE_LOCATIONS <span class="s2">"</span><span class="si">${</span><span class="nv">SCIP_ROOT_DIR</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SCIP_LIB_LOCATIONS <span class="s2">"</span><span class="si">${</span><span class="nv">SCIP_ROOT_DIR</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">else</span> <span class="p">()</span>
+ <span class="nb">set</span><span class="p">(</span>SCIP_ROOT_DIR <span class="s2">""</span> CACHE PATH <span class="s2">"Folder contains SCIP library"</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SCIP_INCLUDE_LOCATIONS <span class="s2">""</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>_SCIP_LIB_LOCATIONS <span class="s2">""</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+<span class="nb">find_path</span><span class="p">(</span>SCIP_INCLUDE_DIR scip/scip.h HINTS <span class="si">${</span><span class="nv">_SCIP_INCLUDE_LOCATIONS</span><span class="si">}</span> PATH_SUFFIXES src<span class="p">)</span>
+<span class="nb">find_library</span><span class="p">(</span>SCIP_LIBRARY scip HINTS <span class="si">${</span><span class="nv">_SCIP_LIB_LOCATIONS</span><span class="si">}</span> PATH_SUFFIXES lib lib/static<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>ZLIB REQUIRED<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Readline REQUIRED<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Soplex REQUIRED<span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span>Gmp REQUIRED<span class="p">)</span>
+<span class="nb">include</span><span class="p">(</span>FindPackageHandleStandardArgs<span class="p">)</span>
+<span class="nf">find_package_handle_standard_args</span><span class="p">(</span>SCIP DEFAULT_MSG SCIP_LIBRARY SCIP_INCLUDE_DIR<span class="p">)</span>
+<span class="nb">if</span> <span class="p">(</span>SCIP_FOUND<span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>SCIP_LIBRARIES <span class="si">${</span><span class="nv">SCIP_LIBRARY</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">list</span><span class="p">(</span>APPEND SCIP_LIBRARIES <span class="si">${</span><span class="nv">SOPLEX_LIBRARY</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">list</span><span class="p">(</span>APPEND SCIP_LIBRARIES <span class="si">${</span><span class="nv">GMP_LIBRARY</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">list</span><span class="p">(</span>APPEND SCIP_LIBRARIES <span class="si">${</span><span class="nv">READLINE_LIBRARIES</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">list</span><span class="p">(</span>APPEND SCIP_LIBRARIES <span class="si">${</span><span class="nv">ZLIB_LIBRARY</span><span class="si">}</span><span class="p">)</span>
+ <span class="nb">set</span><span class="p">(</span>SCIP_INCLUDE_DIRS <span class="si">${</span><span class="nv">SCIP_INCLUDE_DIR</span><span class="si">}</span>
+         <span class="si">${</span><span class="nv">GMP_INCLUDE_DIR</span><span class="si">}</span>
+         <span class="si">${</span><span class="nv">SOPLEX_INCLUDE_DIR</span><span class="si">}</span>
+         <span class="si">${</span><span class="nv">READLINE_INCLUDE_DIR</span><span class="si">}</span>
+         <span class="si">${</span><span class="nv">ZLIB_INCLUDE_DIR</span><span class="si">}</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">()</span>
+</code></pre></div>    </div>
+
+    <p>All constructs used to develop the file have been already explained in the previous examples.</p>
+  </li>
+  <li>
+    <p>Finally, generate the make files and build the project. To maintain separation between source files and build products we output the make files and perform the build in the <code class="highlighter-rouge">build</code> directory.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
+cmake ..
+<span class="nt">--</span> The C compiler identification is GNU 6.3.0
+<span class="nt">--</span> The CXX compiler identification is GNU 6.3.0
+<span class="nt">--</span> Check <span class="k">for </span>working C compiler: /usr/bin/cc
+<span class="nt">--</span> Check <span class="k">for </span>working C compiler: /usr/bin/cc <span class="nt">--</span> works
+<span class="nt">--</span> Detecting C compiler ABI info
+<span class="nt">--</span> Detecting C compiler ABI info - <span class="k">done</span>
+<span class="nt">--</span> Detecting C compile features
+<span class="nt">--</span> Detecting C compile features - <span class="k">done</span>
+<span class="nt">--</span> Check <span class="k">for </span>working CXX compilershell: /usr/bin/c++
+<span class="nt">--</span> Check <span class="k">for </span>working CXX compiler: /usr/bin/c++ <span class="nt">--</span> works
+<span class="nt">--</span> Detecting CXX compiler ABI info
+<span class="nt">--</span> Detecting CXX compiler ABI info - <span class="k">done</span>
+<span class="nt">--</span> Detecting CXX compile features
+<span class="nt">--</span> Detecting CXX compile features - <span class="k">done</span>
+<span class="nt">--</span> Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.a <span class="o">(</span>found version <span class="s2">"1.2.8"</span><span class="o">)</span> 
+<span class="nt">--</span> Found Curses: /usr/lib/x86_64-linux-gnu/libcurses.a  
+<span class="nt">--</span> Found TERMCAP: /usr/lib/x86_64-linux-gnu/libtermcap.a  
+<span class="nt">--</span> Found READLINE: /usr/lib/x86_64-linux-gnu/libreadline.a<span class="p">;</span>/usr/lib/x86_64-linux-gnu/libhistory.a  
+<span class="nt">--</span> Found SOPLEX: /home/pmateusz/Applications/scipoptsuite-5.0.1/soplex/lib/libsoplex.a  
+<span class="nt">--</span> Found GMP: /usr/lib/x86_64-linux-gnu/libgmp.a  
+<span class="nt">--</span> Found SCIP: /home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libscip.a<span class="p">;</span>/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libobjscip.a<span class="p">;</span>/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libtpinone.a<span class="p">;</span>/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/liblpispx2.a<span class="p">;</span>/home/pmateusz/Applications/scipoptsuite-5.0.1/scip/lib/static/libnlpi.cppad.a  
+<span class="nt">--</span> Looking <span class="k">for </span>pthread.h
+<span class="nt">--</span> Looking <span class="k">for </span>pthread.h - found
+<span class="nt">--</span> Looking <span class="k">for </span>pthread_create
+<span class="nt">--</span> Looking <span class="k">for </span>pthread_create - not found
+<span class="nt">--</span> Looking <span class="k">for </span>pthread_create <span class="k">in </span>pthreads
+<span class="nt">--</span> Looking <span class="k">for </span>pthread_create <span class="k">in </span>pthreads - not foundrque Job Management Cover Image
+<span class="nt">--</span> Looking <span class="k">for </span>pthread_create <span class="k">in </span>pthread
+<span class="nt">--</span> Looking <span class="k">for </span>pthread_create <span class="k">in </span>pthread - found
+<span class="nt">--</span> Found Threads: TRUE  
+<span class="nt">--</span> Configuring <span class="k">done</span>
+<span class="nt">--</span> Generating <span class="k">done</span>
+<span class="nt">--</span> Build files have been written to: /home/pmateusz/dev/cmake_sample_project/build
+</code></pre></div>    </div>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>make
+Scanning dependencies of target demo
+<span class="o">[</span> 16%] Building C object CMakeFiles/demo.dir/src/cmain.c.o
+<span class="o">[</span> 33%] Building C object CMakeFiles/demo.dir/src/relax_lp.c.o
+<span class="o">[</span> 50%] Building C object CMakeFiles/demo.dir/src/relax_nlp.c.o
+<span class="o">[</span> 66%] Linking CXX static library libdemo.a
+<span class="o">[</span> 66%] Built target demo
+Scanning dependencies of target demo-main
+<span class="o">[</span> 83%] Building C object CMakeFiles/demo-main.dir/src/cmain.c.o
+<span class="o">[</span>100%] Linking CXX executable demo-main
+<span class="o">[</span>100%] Built target demo-main
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="summary">Summary</h2>
+
+<p>In this post we reviewed a list of CMake functions that are necessary to setup a build of a project that depends on third-party libraries. We then explained the process of finding dependencies by CMake and implemented example modules. The first module handled a library that does not have external dependencies and can be installed using a package downloaded from the official repository. We then switched to more complex scenarios: a library distributed using multiple binaries, a library with third party dependencies and a library built locally whose project root directory should have priority over other locations.</p>
+
+<p>Overall, the material covered here should be sufficient to start development of a new project, but it is definitely not all what CMake has to offer. We mention the most important features below to help you avoid reinventing the wheel. The post is concluded with reference materials on CMake for self-study.</p>
+
+<p>CMake is distributed with additional tools that bundled together form a comprehensive toolbox for building, testing and distributing software. <a href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">CTest</a> is a test runner independent of a testing framework used to develop the tests. Furthermore, CTest configuration is recognized by software development environments, such as CLion or Visual Studio, which allow to run and debug tests within an editor.</p>
+
+<p><a href="https://cmake.org/cmake/help/latest/manual/cpack.1.html">CPack</a> is a generic purpose packaging tool that can create compressed archives or packages with project binaries. CPack supports DEB and RPM package formats, which jointly cover majority of UNIX-like systems.</p>
+
+<p>Apart from finding installed dependencies CMake can automatically download and compile third-party libraries needed to build a project. This feature comes in handy every time a library does not have an installation package available on your system or the package has not been released for the particular version of the library you would like to use. You may consider incorporating this step into build configuration by means of <a href="https://cmake.org/cmake/help/latest/module/ExternalProject.html">ExternalProject_Add</a>. That upfront investment should pay off and save your time later if you are going to develop the project within a community or use an external continuous integration system.</p>
+
+<p>Finding a high quality learning material on CMake for an entry level person can be difficult, because the official documentation assumes that you are already familiar with the tool. Personally, I ended up reviewing repositories of large open source projects and reading how others solved problems I was going to address. A repository of a deep learning framework <a href="https://github.com/BVLC/caffe">Caffe</a> turned out to be very useful to me with this respect. For best practices on writing CMake modules I referred to the <a href="https://gitlab.kitware.com/cmake/cmake">official CMake repository</a> which contains modules for the most popular libraries, such as  <a href="https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/FindProtobuf.cmake">Google Protocol Buffers</a>, <a href="https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/FindLibXml2.cmake">libxml2</a> or <a href="https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/FindZLIB.cmake">ZLIB</a> to name a few.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/latex/2018/01/30/vs-code-latex-editor.html">&laquo; Visual Studio Code as Latex Editor</a>
+			
+			
+				<a class="next" href="/linux/2018/11/11/minizinc-installation-on-debian.html">MiniZinc Installation on Debian &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=CMake%20Project%20with%20Third-party%20Dependencies&url=http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html&description=&title=CMake%20Project%20with%20Third-party%20Dependencies?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html&title=CMake%20Project%20with%20Third-party%20Dependencies&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/c++/cmake/2018/03/11/cmake-project-setup.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

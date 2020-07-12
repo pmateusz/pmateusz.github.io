@@ -1,0 +1,42 @@
+$setup = <<SCRIPT
+echo 192.168.0.2 master.example >> /etc/hosts
+echo 192.168.0.3 slave1.example >> /etc/hosts
+echo 192.168.0.4 slave2.example >> /etc/hosts
+
+apt-get update
+apt-get install --assume-yes sshpass pssh
+ln -s /usr/bin/parallel-ssh /usr/bin/pssh
+SCRIPT
+
+$copy_ssh_id = <<SCRIPT
+printf "\n" | ssh-keygen -t rsa -b 4096 -C "vagrant@example" -N ""
+echo StrictHostKeyChecking no >> ~/.ssh/config
+sshpass -p 'vagrant' ssh-copy-id vagrant@slave1.example
+sshpass -p 'vagrant' ssh-copy-id vagrant@slave2.example
+SCRIPT
+
+$setup_parallel_ssh = <<SCRIPT
+echo "vagrant@slave1.example" > hosts.txt
+echo "vagrant@slave2.example" >> hosts.txt
+SCRIPT
+
+$local_repository = <<SCRIPT
+apt-get install --assume-yes apache2 dpkg-dev
+mkdir -p /var/www/deb/amd64
+cd /var/www/deb/ && dpkg-scanpackages amd64 | gzip -9c > amd64/Packages.gz
+ln -sf /var/www/deb /var/www/html/deb
+SCRIPT
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.hostname = "master.example"
+  config.vm.network :private_network, ip: "192.168.0.2"
+  config.vm.provider :virtualbox do |vm|
+    vm.memory = 2048
+    vm.cpus = 1
+  end
+  config.vm.provision "shell", inline: $setup
+  config.vm.provision "shell", inline: $copy_ssh_id, privileged: false
+  config.vm.provision "shell", inline: $setup_parallel_ssh, privileged: false
+  config.vm.provision "shell", inline: $local_repository
+end

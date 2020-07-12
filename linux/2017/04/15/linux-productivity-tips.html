@@ -1,0 +1,441 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Linux Productivity Tricks and Tips | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Linux Productivity Tricks and Tips" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This article is a the collection of Linux customizations and productivity tricks. Instead of looking for relevant commands in my memory and in the internet every time I need them I decided to organize them here. I hope you will find them useful too." />
+<meta property="og:description" content="This article is a the collection of Linux customizations and productivity tricks. Instead of looking for relevant commands in my memory and in the internet every time I need them I decided to organize them here. I hope you will find them useful too." />
+<link rel="canonical" href="http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html" />
+<meta property="og:url" content="http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-04-15T00:00:00+01:00" />
+<script type="application/ld+json">
+{"description":"This article is a the collection of Linux customizations and productivity tricks. Instead of looking for relevant commands in my memory and in the internet every time I need them I decided to organize them here. I hope you will find them useful too.","@type":"BlogPosting","headline":"Linux Productivity Tricks and Tips","dateModified":"2017-04-15T00:00:00+01:00","datePublished":"2017-04-15T00:00:00+01:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html"},"url":"http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Linux Productivity Tricks and Tips</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/linux/">Linux</a>
+		</span>
+	
+	<span class="post-date">April 15, 2017</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/productivity_linux-d62ca269b1f647b1af23171d06191f1b0ec59eefce9701cfff398eed09eeeafb.png" /></p>
+
+<p>This article is a the collection of Linux customizations and productivity tricks. Instead of looking for relevant commands in my memory and in the internet every time I need them I decided to organize them here. I hope you will find them useful too.</p>
+
+<!--more-->
+
+<p>The command line examples presented below were tested on Debian Jessie. They should be portable to Ubuntu and other Linux environments from Debian family.</p>
+
+<p>I am going to keep this post updated, so you may consider subscribing to the RSS channel.</p>
+
+<h2 id="disable-sudo-password-question">Disable sudo password question</h2>
+
+<p>How many times have you been asked your sudo password? Such question in this context does not considerably improve security of your system. You have already managed to login and you just have issued a command, so are staying active.</p>
+
+<p>The sudo securicy policy plugin is configured using the sudoers configuration file, stored by default in the <code class="highlighter-rouge">/etc/sudoers</code> location.</p>
+
+<p>The sudoers file must be edited by the <code class="highlighter-rouge">visudo</code> command executed as root.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>visudo
+</code></pre></div></div>
+
+<p>Add the following rule with your username to the sudoers file. After the successful update the user will be allowed to run any command as anyone without beging prompted for a password.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>username <span class="nv">ALL</span><span class="o">=(</span>ALL<span class="o">)</span> NOPASSWD:ALL
+</code></pre></div></div>
+
+<p>See the sudoers man pages to learn more about the sudo security policy plugin and configuration options available through the sudoers file.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>man sudoers
+</code></pre></div></div>
+
+<h2 id="setup-the-ssh-agent">Setup the SSH agent</h2>
+
+<p>Another workflow that often requires a password is accessing protected resources such as private Git repositories. Fortunately, service providers like <a href="">GitHub</a> or <a href="">BitBucket</a> support secure shell (SSH), a viable alternative that simplifies authentication process.</p>
+
+<p>This tip explains how to add your SSH identity to the SSH agent automatically every time you open to the Bash shell and release it as soon as your session expires.</p>
+
+<p>If you are new to SSH I strongly encourage you to read an excellent article <a href="http://www.unixwiz.net/techtips/ssh-agent-forwarding.html">An Illustrated Guide to SSH Agent Frowarding</a> which explains principles behind secure shell that later will help you efficiently troubleshoot problems and avoid common pitfalls that breach security of your system.</p>
+
+<p>This section assumes that you have already a SSH key pair: <code class="highlighter-rouge">id_rsa</code> and <code class="highlighter-rouge">id_rsa.pub</code> saved in <code class="highlighter-rouge">~/.ssh</code> directory. If you have not generate it yet see the the <a href="https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/">GitHub tutorial</a> which explains how to create a new SSH key pair.</p>
+
+<p>Firstly, start the SSH agent and register your identity by adding the following snippet to the <code class="highlighter-rouge">.bashrc</code> file.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">[</span> <span class="nt">-z</span> <span class="s2">"</span><span class="nv">$SSH_AUTH_SOCK</span><span class="s2">"</span> <span class="o">]</span> <span class="p">;</span> <span class="k">then
+    </span><span class="nb">eval</span> <span class="sb">`</span>ssh-agent<span class="sb">`</span>
+    ssh-add
+<span class="k">fi</span>
+</code></pre></div></div>
+
+<p>Secondly, append the command below to the <code class="highlighter-rouge">.bash_logout</code> file. It kills the SSH agent associated with your terminal session as soon as you close it.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">kill</span> <span class="nv">$SSH_AGENT_PID</span>
+</code></pre></div></div>
+
+<p>Finally, register the SSH public key in your service provider. It requires you to add the public SSH key fingerprint in your account.</p>
+
+<p>Use the following command to print your public SSH fingerprint and refer to your service provider instructions where it should be saved.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ssh-keygen <span class="nt">-lf</span> ~/.ssh/id_rsa.pub
+<span class="nb">cat</span> 
+</code></pre></div></div>
+
+<h1 id="enable-autologin">Enable autologin</h1>
+
+<p>This tip assumes your computer cannot be accessed by unauthorized person. You may consider it for your home PC. Applying it on an office workstation is certainly looking for trouble.</p>
+
+<p>Automatic login is tightly coupled to your virtual desktop environment. The example below applies to <a href="https://www.gnome.org/">Gnome 3</a>. Other environments follow similar pattern, but use different locations for configuration files.</p>
+
+<p>Open Gnome Desktop Manager (GDM) configuration file and enable automatic login for your username.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>vim /etc/gdm3/daemon.conf
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># GDM configuration storage
+#
+# See /usr/share/gdm/gdm.schemas for a list of available options.
+
+[daemon]
+# Enabling automatic login
+AutomaticLoginEnable = true
+AutomaticLogin = username
+</code></pre></div></div>
+
+<h2 id="adjust-dynamic-scaling-factor-of-cpu">Adjust dynamic scaling factor of CPU</h2>
+
+<p>It is unlikely that you are utilizing your CPU at full speed without changing default settings. Most common CPU power schemes are set to run at less-than-maximum frequency to conserve power and keep your fan silent. It is considered that this policy also increases hardware lifetime, though the actual savings are difficult to quantify.</p>
+
+<p>If you are running CPU intensive calculations on your PC and want results as soon as possible adjusting effective CPU frequency temporarily should not hurt.</p>
+
+<p>Firstly, try to asses if increasing CPU frequency makes sense in your context. If your calculation is IO intensive or the CPU is a few generations behind the game may not be worth the candle.</p>
+
+<p>To see the detailed information of your CPU open the <code class="highlighter-rouge">/proc/cpuinfo</code> file or run the <code class="highlighter-rouge">lscpu</code> command.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>lscpu
+
+<span class="nb">cat</span> /proc/cpuinfo
+</code></pre></div></div>
+
+<p>Proceed by installing the <code class="highlighter-rouge">cpufrequtils</code> package. It contains a collection of command line utilities that allow for a temporary adjustment of the effective CPU frequency.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>cpufrequtils
+</code></pre></div></div>
+
+<p>Check current frequency of each core and the power saving scheme in use. The latter is also known a governor.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cpufreq-info
+</code></pre></div></div>
+
+<p>The output should include the current governor which may be <code class="highlighter-rouge">powersave</code> or <code class="highlighter-rouge">ondemand</code> and other available options.</p>
+
+<p>Finally, switch temporarily all cores to the <code class="highlighter-rouge">performance</code> governor policy.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo cpufreq-set -r -g performance
+</code></pre></div></div>
+
+<p>The governor policy will fall back to the default option after reboot. For a persistent change edit the <code class="highlighter-rouge">/etc/init.d/cpufrequtils</code> file.</p>
+
+<p>CPU frequency adjustment heavily depends on your Linux distribution. For more information on the topic search the system documentation using the <code class="highlighter-rouge">CPU frequency scaling</code> or <code class="highlighter-rouge">CPU dynamic scaling</code> keywords.</p>
+
+<h2 id="check-where-the-package-is-installed-on-the-machine">Check where the package is installed on the machine</h2>
+
+<p>StackOverflow is full questions where to find the location of particular binary or configuration file. Fortunately, one does not have to cut his teeth on maintaining a Linux repository to answer them.</p>
+
+<p>Firstly, you may not have access to the operating system of your colleague or a StackOverflow user you are supporting. The fastest option in that case is searching the package repository for that Linux distribution.
+For example, Apache 2 HTTP server binaries and configuration files on Debian Jessie can be listed using the link: https://packages.debian.org/jessie/all/apache2/filelist.</p>
+
+<p>If you have direct access to machine package manager should come to rescue.</p>
+
+<p>Assuming that the Apache HTTP server is installed the following Debian package manager command lists its content.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dpkg <span class="nt">--listfiles</span> apache2
+</code></pre></div></div>
+
+<p>If you would like include all packages that start with <code class="highlighter-rouge">apache</code> name use the query below.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dpkg <span class="nt">--listfiles</span> <span class="s1">'apache*'</span>
+</code></pre></div></div>
+
+<p>Another useful <code class="highlighter-rouge">dpkg</code> query options are printing all packages installed in the system and listing detailed information about a package.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dpkg <span class="nt">--list</span>
+dpkg <span class="nt">--status</span> apache2
+</code></pre></div></div>
+
+<p>The list of all packages installed in the system is also stored in the <code class="highlighter-rouge">/var/lib/dpkg/available</code> file.</p>
+
+<p>Some binaries though are not distributed using <code class="highlighter-rouge">*.deb</code> packages and therefore Debian package manager is clueless about them.</p>
+
+<p>For finding their absolute paths use the <code class="highlighter-rouge">whereis</code> or <code class="highlighter-rouge">which</code> command. The former</p>
+
+<p>In that case use the <code class="highlighter-rouge">which</code> command for binary utilities and <code class="highlighter-rouge">locate</code> for libraries. The former also prints location of source files and man pages.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>whereis curl
+which curl
+</code></pre></div></div>
+
+<p>On the other hand, if you are building a C or C++ project and would like to know which archive (.a) and shared object (.so) libraries are available list dynamic linker run-time bindings using the command below.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>ldconfig <span class="nt">-v</span>
+</code></pre></div></div>
+
+<p>Finally, let’s mention general purpose utilities for querying file system.</p>
+
+<p><code class="highlighter-rouge">locate</code> is a command line utility for querying filepaths by pattern. Instead of traversing filesystem directly is uses a file name database. It should return fast and does not negatively affect IO performance. The robustness is paid by accuracy. Results may not include file system items that have been removed or added recently. If you do not get results you expect to see refresh the file name database using the <code class="highlighter-rouge">updatedb</code> command or use a complement command - <code class="highlighter-rouge">find</code>.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>updatedb
+
+locate <span class="nt">--ignore-case</span> libcurl
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">find</code> runs the search in a file system. It consumes more IO resources than <code class="highlighter-rouge">locate</code>, but prints most up to date results. It also supports more sophisticate set parameters that limit the depth of a search tree, include time of modification or the file size. The example below runs a case insensitive search of the curl filename starting from the root of the filesystem. The command is expected to print access denied errors for protected directories therefore its error output is redirected.  Refer to the man pages for the full description of the <code class="highlighter-rouge">find</code> command.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>find / <span class="nt">-iname</span> <span class="s1">'curl'</span> 2&gt;/dev/null
+</code></pre></div></div>
+
+<p>I would be pleased to hear your comment if you spot an error in the article. More Linux-related articles are expected to appear in the following weeks. I am going to cover managing multiple Linux machines effectively, disaster recovery like loosing root password and useful commands that you may have missed.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/latex/2017/03/29/vs-code-latex-editor.html">&laquo; Visual Studio Code as Latex Editor</a>
+			
+			
+				<a class="next" href="/linux/2017/04/22/linux-usb-device-drivers.html">Device Drivers Installation on Linux &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Linux%20Productivity%20Tricks%20and%20Tips&url=http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html&description=&title=Linux%20Productivity%20Tricks%20and%20Tips?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html&title=Linux%20Productivity%20Tricks%20and%20Tips&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/linux/2017/04/15/linux-productivity-tips.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

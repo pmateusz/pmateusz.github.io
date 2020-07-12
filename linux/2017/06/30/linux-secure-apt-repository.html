@@ -1,0 +1,682 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Personal DEB Package Repository using GitHub Pages | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Personal DEB Package Repository using GitHub Pages" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Keeping a project build in a manageable time range is an important prerequisite for an efficient software development workflow. The more complex projects are the more time, automation effort and tools required to develop and maintain an efficient build pipeline. Regardless of a scale and type of a project the core principle of avoiding unnecessary work is worth applying. This tutorial presents an approach to simplify a build process by creating a package of a third-party software component upfront and hosting it in an external package repository. It is an alternative to building a component from sources on a development or continuous integration machine." />
+<meta property="og:description" content="Keeping a project build in a manageable time range is an important prerequisite for an efficient software development workflow. The more complex projects are the more time, automation effort and tools required to develop and maintain an efficient build pipeline. Regardless of a scale and type of a project the core principle of avoiding unnecessary work is worth applying. This tutorial presents an approach to simplify a build process by creating a package of a third-party software component upfront and hosting it in an external package repository. It is an alternative to building a component from sources on a development or continuous integration machine." />
+<link rel="canonical" href="http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html" />
+<meta property="og:url" content="http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-06-30T00:00:00+01:00" />
+<script type="application/ld+json">
+{"description":"Keeping a project build in a manageable time range is an important prerequisite for an efficient software development workflow. The more complex projects are the more time, automation effort and tools required to develop and maintain an efficient build pipeline. Regardless of a scale and type of a project the core principle of avoiding unnecessary work is worth applying. This tutorial presents an approach to simplify a build process by creating a package of a third-party software component upfront and hosting it in an external package repository. It is an alternative to building a component from sources on a development or continuous integration machine.","@type":"BlogPosting","headline":"Personal DEB Package Repository using GitHub Pages","dateModified":"2017-06-30T00:00:00+01:00","datePublished":"2017-06-30T00:00:00+01:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html"},"url":"http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Personal DEB Package Repository using GitHub Pages</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/linux/">Linux</a>
+		</span>
+	
+	<span class="post-date">June 30, 2017</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/package_content_linux-9fcf8a68b19545d86a55d4c5503717852f995a03910b4fcb7a41d982e94c1b75.png" /></p>
+
+<!-- TODO: github pages links are incorrect -->
+<!-- TODO: -- gets replaced by -->
+<!-- TODO: no info how to activate pages -->
+
+<p>Keeping a project build in a manageable time range is an important prerequisite for an efficient software development workflow. The more complex projects are the more time, automation effort and tools required to develop and maintain an efficient build pipeline. Regardless of a scale and type of a project the core principle of avoiding unnecessary work is worth applying.</p>
+
+<p>This tutorial presents an approach to simplify a build process by creating a package of a third-party software component upfront and hosting it in an external package repository. It is an alternative to building a component from sources on a development or continuous integration machine.</p>
+
+<p><!--more--></p>
+
+<p>In the example presented below the Google Operation Research Tools library is compiled on a clean virtual machine and then packaged by the DEB CPack Package Generator. The process is automated using Vagrant. Then, a local Debian package repository is setup to host the package created in the previous step. Finally, the package repository is made public by uploading it to GitHub and hosting using GitHub Pages.</p>
+
+<p>Although the tutorial is built around a specific example, the overall approach and selected tools are generic. In particular, CPack offers a unified interface for creating packages that supports the most popular formats including ZIP, DEB and RPM.</p>
+
+<h1 id="create-a-deb-package">Create a DEB package</h1>
+
+<p>There is not a single established way to create DEB packages. This section demonstrate DEB CPack Package Generator which should be suitable for building packages for internal use, especially if you are already familiar with CMake or it is used as the project build tool. If you aspire to applying for hosting the package in the official Debian/Ubuntu repositories refer to the <a href="https://www.debian.org/doc/manuals/maint-guide/">Debian New Maintainers’ Guide</a>. That document explains a complex process of packaging that allows for applying custom patches and more flexibility.</p>
+
+<p>CPack is the package generator used by CMake. Apart from DEB and RPM popular in Linux community, CPack supports also cross platform formats such as ZIP. CPack is integrated with CMake build process in the similar vein as packaging plugins with Maven. Package generation is executed after compilation and tests. By default one package is created for a build project.</p>
+
+<p>Package configuration is typically described in a single text file that contains a list of GLOB patterns capturing files and directories to be distributed with the package. Furthermore, a specific package output format may impose extra requirements on information that should be included. For example, the DEB package format requires metadata such as package version, processor architecture and maintainer.</p>
+
+<p>The listing below contains a CPack configuration for the Google Operational Research Tools library.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cmake_minimum_required<span class="o">(</span>VERSION 3.2 FATAL_ERROR<span class="o">)</span>
+project<span class="o">(</span>or_tools_package LANGUAGES CXX VERSION 6.0<span class="o">)</span>
+
+include<span class="o">(</span>./Utils.cmake<span class="o">)</span>
+
+m_get_filepath<span class="o">(</span>OR_TOOLS_DIR ~/dev/or-tools REALPATH<span class="o">)</span>
+m_get_filepath<span class="o">(</span>OR_TOOLS_DEP_INSTALL_DIR <span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/dependencies/install REALPATH<span class="o">)</span>
+
+add_custom_target<span class="o">(</span>dist COMMAND <span class="k">${</span><span class="nv">CMAKE_MAKE_PROGRAM</span><span class="k">}</span> package<span class="o">)</span>
+
+<span class="c"># Dependencies</span>
+
+<span class="c"># Protobuf = 3.3.0</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DEP_INSTALL_DIR</span><span class="k">}</span>/include/google/protobuf/api.pb.h<span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DEP_INSTALL_DIR</span><span class="k">}</span>/lib/libprotobuf.a<span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DEP_INSTALL_DIR</span><span class="k">}</span>/bin/protoc<span class="o">)</span>
+
+<span class="nb">install</span><span class="o">(</span>DIRECTORY <span class="k">${</span><span class="nv">OR_TOOLS_DEP_INSTALL_DIR</span><span class="k">}</span>/include/google/ DESTINATION include/google<span class="o">)</span>
+
+<span class="nb">install</span><span class="o">(</span>DIRECTORY <span class="k">${</span><span class="nv">OR_TOOLS_DEP_INSTALL_DIR</span><span class="k">}</span>/lib/ DESTINATION lib
+  FILES_MATCHING PATTERN <span class="s2">"libproto*"</span>
+                 PATTERN <span class="s2">"cmake"</span> EXCLUDE
+                 PATTERN <span class="s2">"pkgconfig"</span> EXCLUDE<span class="o">)</span>
+
+<span class="nb">install</span><span class="o">(</span>FILES <span class="k">${</span><span class="nv">OR_TOOLS_DEP_INSTALL_DIR</span><span class="k">}</span>/bin/protoc DESTINATION bin<span class="o">)</span>
+
+<span class="c"># gflags = 2.2.0</span>
+<span class="c"># Glog = 0.3.5</span>
+<span class="c"># cbc = 2.9.8</span>
+<span class="c"># CoinUtils = 2.10.13</span>
+<span class="c"># Osi = 0.107.8</span>
+<span class="c"># Clp = 1.16.10</span>
+<span class="c"># Cgl = 0.59.9</span>
+<span class="c"># ...</span>
+
+<span class="c"># OR Tools 6.0</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/lib/libcvrptw_lib.so <span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/lib/libdimacs.so<span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/lib/libfap.so<span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/lib/libortools.so<span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/ortools/linear_solver/linear_solver.h<span class="o">)</span>
+m_check_filepath<span class="o">(</span><span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/ortools/gen/ortools/linear_solver/linear_solver.pb.h<span class="o">)</span>
+
+<span class="nb">install</span><span class="o">(</span>DIRECTORY <span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/lib/ DESTINATION lib
+  FILES_MATCHING PATTERN <span class="s2">"lib*"</span><span class="o">)</span>
+
+foreach <span class="o">(</span><span class="nb">dir </span>algorithms base bop constraint_solver flatzinc glop graph linear_solver lp_data sat util<span class="o">)</span>
+  <span class="nb">install</span><span class="o">(</span>DIRECTORY <span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/ortools/<span class="k">${</span><span class="nv">dir</span><span class="k">}</span> DESTINATION include/ortools FILES_MATCHING PATTERN <span class="s2">"*.h"</span><span class="o">)</span>
+  <span class="nb">install</span><span class="o">(</span>DIRECTORY <span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/ortools/gen/ortools/<span class="k">${</span><span class="nv">dir</span><span class="k">}</span> DESTINATION include/ortools FILES_MATCHING PATTERN <span class="s2">"*.h"</span><span class="o">)</span>
+endforeach <span class="o">()</span>
+
+<span class="k">if</span><span class="o">(</span>EXISTS <span class="s2">"</span><span class="k">${</span><span class="nv">CMAKE_ROOT</span><span class="k">}</span><span class="s2">/Modules/CPack.cmake"</span><span class="o">)</span>
+  include<span class="o">(</span>InstallRequiredSystemLibraries<span class="o">)</span>
+
+  <span class="nb">set</span><span class="o">(</span>CPACK_SET_DESTDIR <span class="s2">"on"</span><span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGING_INSTALL_PREFIX <span class="s2">"/tmp"</span><span class="o">)</span>
+
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_NAME <span class="s2">"or-tools"</span><span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_VENDOR <span class="s2">"google"</span><span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_CONTACT <span class="s2">"mateusz.polnik at strath.ac.uk"</span><span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_DESCRIPTION <span class="s2">"Google Optimization Tools"</span><span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_DESCRIPTION_SUMMARY <span class="k">${</span><span class="nv">CPACK_PACKAGE_DESCRIPTION</span><span class="k">}</span><span class="o">)</span>
+
+  <span class="nb">set</span><span class="o">(</span>CPACK_RESOURCE_FILE_LICENSE <span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/LICENSE-2.0.txt<span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_RESOURCE_FILE_README <span class="k">${</span><span class="nv">OR_TOOLS_DIR</span><span class="k">}</span>/README<span class="o">)</span>
+  <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_VERSION <span class="k">${</span><span class="nv">PROJECT_VERSION</span><span class="k">}</span><span class="o">)</span>
+
+  <span class="k">if</span><span class="o">(</span>UNIX<span class="o">)</span>
+    list<span class="o">(</span>APPEND CPACK_GENERATOR <span class="s2">"DEB"</span><span class="o">)</span>
+
+    m_get_architecture<span class="o">(</span>_OS_ARCH<span class="o">)</span>
+    mark_as_advanced<span class="o">(</span>_OS_ARCH<span class="o">)</span>
+
+    <span class="nb">set</span><span class="o">(</span>CPACK_DEBIAN_REVISON <span class="s2">"ubuntu-trusty-a1"</span><span class="o">)</span>
+    <span class="nb">set</span><span class="o">(</span>CPACK_PACKAGE_FILE_NAME <span class="s2">"</span><span class="k">${</span><span class="nv">CPACK_PACKAGE_NAME</span><span class="k">}</span><span class="s2">-</span><span class="k">${</span><span class="nv">CPACK_PACKAGE_VERSION</span><span class="k">}</span><span class="s2">-</span><span class="k">${</span><span class="nv">CPACK_DEBIAN_REVISON</span><span class="k">}</span><span class="s2">_</span><span class="k">${</span><span class="nv">_OS_ARCH</span><span class="k">}</span><span class="s2">"</span><span class="o">)</span>
+    <span class="nb">set</span><span class="o">(</span>CPACK_DEBIAN_PACKAGE_PRIORITY <span class="s2">"optional"</span><span class="o">)</span>
+    <span class="nb">set</span><span class="o">(</span>CPACK_DEBIAN_COMPRESSION_TYPE <span class="s2">"gzip"</span><span class="o">)</span>
+    <span class="nb">set</span><span class="o">(</span>CPACK_DEBIAN_PACKAGE_DEPENDS <span class="s2">"git (&gt;= 1:2.1.4), bison (&gt;= 2:3.0.2), flex (&gt;= 2.5.39), python-setuptools (&gt;= 3.3.8), python-dev (&gt;= 2.7.9), autoconf (&gt;= 2.69), libtool (&gt;= 2.4.2), zlib1g-dev (&gt;= 1:1.2.8), texinfo (&gt;= 5.2.0), help2man (&gt;= 1.46.4), gawk (&gt;= 1:4.1.1), g++ (&gt;= 4:4.9), curl (&gt;= 7.38.0), texlive, cmake (&gt;= 3.0.2), subversion (&gt;= 1.8.10)"</span><span class="o">)</span>
+  endif<span class="o">()</span>
+
+  include<span class="o">(</span>CPack<span class="o">)</span>
+endif<span class="o">()</span>
+</code></pre></div></div>
+
+<p>Third-party dependencies required by the library except Protocol Buffers were skipped for brevity. See <a href="https://github.com/pmateusz/examples/blob/master/build_deb_package/ubuntu/CMakeLists.txt">GitHub</a> for the full content of the file. Important elements of the CPack configuration are explained below.</p>
+
+<ol>
+  <li>Declare the CMake header. It should mention the minimum supported CMake version, because some commands or their options may not be available in older versions of CMake.</li>
+  <li>Declare the project name and the version. The name and the version of the project will be reused to set the package name and version respectively.</li>
+  <li>Import custom utility functions. The script uses two non-standard functions that operate on file paths. <code class="highlighter-rouge">m_check_filepath</code> asserts that a file exists in the specified location. Otherwise a fatal error is raised. <code class="highlighter-rouge">m_get_filepath</code> is an extension of <code class="highlighter-rouge">m_check_filepath</code> that assigns the absolute filepath to a local variable. Implementation of both helper functions is available in the <a href="https://github.com/pmateusz/examples/blob/master/build_deb_package/ubuntu/Utils.cmake">Utils.cmake</a> file. The default CMake command to operate on file paths, [get_filename_component](https://cmake.org/cmake/help/v3.9/command/get_filename_component.html, cannot be configured to raise a fatal error. I found the strict variant more useful to prevent creating a package of a project that did not compile correctly or was restructured since previous release.</li>
+  <li>Declare a custom target <code class="highlighter-rouge">dist</code> to build a package.</li>
+  <li>Specify files that should be included in the package using the <a href="https://cmake.org/cmake/help/v3.9/command/install.html"><code class="highlighter-rouge">install</code></a> command.</li>
+  <li>Set the package output format and metadata. CPack is available as a CMake module. It is considered a good practice to ensure that module is available and load it on demand. Available metadata depends on the package format. Some properties may be required to set to build a package. For more information on other output formats and their configuration see <a href="https://cmake.org/cmake/help/v3.9/manual/cpack.1.html">the CPack documentation</a>.</li>
+</ol>
+
+<p>Make sure that the <code class="highlighter-rouge">include(CPack)</code> statement is the final command of the CPack configuration block. Otherwise, the module may not work correctly.</p>
+
+<p>Once the CPack configuration is ready run the <strong>cmake</strong> program to generate make files for your platform. This step should succeed if there are no syntax errors in the CPack configuration and all files required to build the package are available in the file system. Then run <code class="highlighter-rouge">make dist</code> to build the package using the make files generated in the previous step. It is common to output make files to a separate directory, so they can be easily removed if needed.</p>
+
+<p>The sequence of commands below attempts to remove previous make files, generates new make files and builds a package if previous steps were successful.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">rm</span> <span class="nt">-Rf</span> build <span class="se">\</span>
+<span class="o">&amp;&amp;</span> <span class="nb">mkdir</span> <span class="nt">-p</span> build <span class="se">\</span>
+<span class="o">&amp;&amp;</span> <span class="nb">cd </span>build <span class="se">\</span>
+<span class="o">&amp;&amp;</span> cmake .. <span class="se">\</span>
+<span class="o">&amp;&amp;</span> make dist
+</code></pre></div></div>
+<p>It is useful to package software on a clean operating system image. Following this practice is important for several reasons. Firstly, all administrator operations required to build a package are either documented or automated. Secondly, the build is always executed in the same environment, so it is reproducible. Furthermore, package content is not affected by user activity, temporary changes or software updates. Finally, bugs are detected as soon as possible, because they are not masked by undocumented temporary modifications.</p>
+
+<p>Fortunately, using a clean operating system image does not imply that the process has to be manual. In fact, packaging can be automated end-to-end due to the advent of provisioning tools. In this article building a package is implemented as a Vagrant script. Vagrant is an automation tool that provides a unified interface for accessing popular provisioning tools and virtual machine providers. If you are not familiar with Vagrant or would like to keep things simple, execute the shell scripts referenced by the Vagrant configuration below. Otherwise, to learn more about Vagrant and install it in your environment, see the <a href="https://www.vagrantup.com/">official project site</a>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.hostname = "ubuntu.server.org"
+  config.vm.provider :virtualbox do |vm|
+    vm.memory = 4096
+    vm.cpus = 4
+  end
+
+  config.vm.provision :shell, name: "install-prerequisites", path: "third-party-install.sh"
+  config.vm.provision :shell, name: "install-cmake", path: "cmake-install.sh"
+  config.vm.provision :shell, privileged: false, name: "compile-or-tools", path: "or-tools-compile.sh"
+  config.vm.provision :shell, privileged: false, name: "package-or-tools", path: "or-tools-package.sh"
+end
+</code></pre></div></div>
+
+<p>Download the Vagrant and shell scripts from <a href="https://github.com/pmateusz/examples/tree/master/build_deb_package/ubuntu">GitHub</a> and save them in the same folder.</p>
+
+<p>Open the folder in terminal and run the <code class="highlighter-rouge">vagrant up</code> command.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>vagrant up
+</code></pre></div></div>
+
+<p>The workflow consists of the following phases:</p>
+
+<ul>
+  <li>Download the operating system image,</li>
+  <li>Install external tools and some third-party libraries required for compilation,</li>
+  <li>Install the latest version of CMake from sources,</li>
+  <li>Download the project sources,</li>
+  <li>Download and compile remaining third-party libraries required by the project,</li>
+  <li>Compile the project,</li>
+  <li>Package the project as a library along with its third-party dependencies.</li>
+</ul>
+
+<p>The whole packaging process may take up to 2 hours on a slow network connection. Fortunately, the process requires no user interaction.</p>
+
+<p>Once the final step completes the package <code class="highlighter-rouge">or-tools-6.0-ubuntu-trusty-a1_amd64.deb</code> should be written to the directory that contains the Vagrant script.</p>
+
+<h1 id="setup-a-local-secure-package-repository">Setup a local, secure package repository</h1>
+
+<p>Integrity of Debian package repositories is protected by a royalty-free, key-based cryptographic solution alternative to the commercial proprietary Pretty Good Privacy (PGP). Its open standard, known as OpenPGP, is defined in <a href="https://www.ietf.org/rfc/rfc4880.txt">RFC4880</a>. Free implementation of the standard is available on Linux distributions by <a href="https://www.gnu.org/home.en.html">GNU Foundation</a> as GnuGP Privacy Guard or GnuPG for short. The software is distributed on Debian and Ubuntu as the <code class="highlighter-rouge">gnupg</code> package.</p>
+
+<p>Install the <code class="highlighter-rouge">gnupg</code> package.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>gnupg
+</code></pre></div></div>
+
+<p>Successful generation of a new PGP key pair requires sufficient amount of entropy in the system. The exact minimum threshold depends on the size of a key and the algorithm selected in the wizard.</p>
+
+<p>Check the amount of entropy in the system.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cat</span> /proc/sys/kernel/random/entropy_avail
+</code></pre></div></div>
+
+<p>A value larger than 3000 bits is sufficient to create strong 4096 bit keys. If the value is lower than 1000 bits, you certainly should generate more entropy. Otherwise, the <strong>gpg</strong> program will issue a warning about insufficient entropy in kernel and wait until more entropy is available. That may force you to stop the key generation process if you are connected via SSH, have a single terminal window and no means to generate more entropy.</p>
+
+<p>Install <code class="highlighter-rouge">rng-tools</code> to accelerate entropy collection by kernel.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>apt-get <span class="nb">install </span>rng-tools
+</code></pre></div></div>
+
+<p>The package contains the hardware RNG entropy gatherer daemon <strong>rngd</strong>. The program uses hardware random number generators if they are available in the system. They are faster than traditional sources of entropy, such as inter-interrupt timings, inter-keyboard timings or disk latency. The <strong>rngd</strong> daemon should be started automatically after the package is installed.</p>
+
+<p>Generate a PGP key pair. To make things simpler for the first time, provide an empty password while answering the wizard questions. This way you will avoid the password prompt before importing a package to the local repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gpg <span class="nt">--gen-key</span>
+</code></pre></div></div>
+
+<p>If you would like to use an existing key, import it using the command below.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gpg <span class="nt">--allow-secret-key-import</span> <span class="nt">--import</span> private.key
+</code></pre></div></div>
+
+<p>For completeness the cheat sheet below contains commands for common operations on PGP keys. The <code class="highlighter-rouge">--armor</code> option is used to export a key in ASCII format, so the output can be printed and sent via email. Other options are self-explanatory. For information how to use the <strong>gpg</strong> utility to sign documents, verify signatures, edit or revoke keys check the man pages.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">GPG Cheat Sheet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">gpg –gen-key</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –output public.key –armor –export email.address</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –output private.key –armor –export-secret-key email.address</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –import public.key</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –allow-secret-key-import –import private.key</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –delete-key email.address</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –delete-secret-key email.address</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –list-keys</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">gpg –list-secret-keys</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Install the <code class="highlighter-rouge">reprepro</code> program for local Debian package repository administration. It simplifies and automates file system operations that otherwise would be toilsome and error-prone.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>reprepro
+</code></pre></div></div>
+
+<p>Create a directory for repository and open it in a terminal window.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>debian <span class="o">&amp;&amp;</span> <span class="nb">cd </span>debian
+</code></pre></div></div>
+
+<p>Create a directory named <strong>conf</strong> and move to it.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>conf <span class="o">&amp;&amp;</span> <span class="nb">cd </span>conf
+</code></pre></div></div>
+
+<p>Create a file named <strong>distributions</strong>.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">touch </span>distributions
+</code></pre></div></div>
+
+<p>The file stores the repository metadata and configuration. The listing below presents an example content.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Origin: pmateusz.github.io/debian
+Label: pmateusz.github.io/debian
+Codename: jessie
+Architectures: amd64
+Components: main
+Description: Personal repository
+SignWith: B2323F7E
+</code></pre></div></div>
+
+<p>The meaning of specific headers is explained in the table below.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">Header</th>
+      <th style="text-align: left">Required</th>
+      <th style="text-align: left">Possible Values</th>
+      <th style="text-align: left">Documentation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">Origin</td>
+      <td style="text-align: left">No</td>
+      <td style="text-align: left">Any text</td>
+      <td style="text-align: left">Name of maintainer, company name, address of repository</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Label</td>
+      <td style="text-align: left">No</td>
+      <td style="text-align: left">Any text</td>
+      <td style="text-align: left">Name of maintainer, company name, address of repository</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Codename</td>
+      <td style="text-align: left">Yes</td>
+      <td style="text-align: left">Jessie, Trusty etc.</td>
+      <td style="text-align: left">Unique identifier of a distribution. Fixed and not supposed to change. Used to reference the repository in user configuration.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Architectures</td>
+      <td style="text-align: left">Yes</td>
+      <td style="text-align: left">amd64, i386, source</td>
+      <td style="text-align: left">Multiple values can be provided separated by spaces.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">Components</td>
+      <td style="text-align: left">Yes</td>
+      <td style="text-align: left">main, non-free, contrib</td>
+      <td style="text-align: left">Apt repository naming scheme. Used to reference the repository in user configuration.</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">SignWith</td>
+      <td style="text-align: left">No</td>
+      <td style="text-align: left">yes, default, KEY.ID</td>
+      <td style="text-align: left">The parameter passed to the <code class="highlighter-rouge">libpgpgme</code> library and controls the selection of a private key used to issue a signature. If the value is set to <strong>yes</strong> or <strong>default</strong> the first key will be used. If packages are not to be signed, the SignWith header should be removed.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The KEY.ID value for the <strong>SignWith</strong> header can be obtained from the <code class="highlighter-rouge">gpg --list-secret-keys</code> output.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>username@debian:~/dev/debian/conf<span class="nv">$ </span>gpg <span class="nt">--list-secret-keys</span>
+/home/username/.gnupg/secring.gpg
+<span class="nt">---------------------------------</span>
+sec   4096R/B4411E34 2017-05-19 <span class="o">[</span>expires: 2018-05-19]
+uid                  Forename Surname <span class="o">(</span>username<span class="o">)</span> &lt;email.address&gt;
+ssb   4096R/B2323F7E 2017-05-19
+</code></pre></div></div>
+
+<p>In the example above <code class="highlighter-rouge">B2323F7E</code> is the key id to use in configuration. For curious readers <strong>sec</strong> and <strong>ssb</strong> are resolved to secret key and secret subkey respectively. For more information on GPG subkeys see <a href="https://www.void.gr/kargig/blog/2013/12/02/creating-a-new-gpg-key-with-subkeys/">the blog post</a>.</p>
+
+<p>Import the package to the local repository. Replace repository path, codename and package with your values.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>reprepro <span class="nt">--basedir</span> REPOSITORY.PATH includedeb CODENAME PACKAGE
+</code></pre></div></div>
+
+<p>Other common repository operations are listing packages stored in a repository and removing a package from a repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>reprepro <span class="nt">--basedir</span> REPOSITORY.PATH list CODENAME
+reprepro <span class="nt">--basedir</span> REPOSITORY.PATH remove CODENAME PACKAGE
+</code></pre></div></div>
+
+<h1 id="host-a-package-repository-using-github-pages">Host a package repository using GitHub Pages</h1>
+
+<p>Create a new repository in GitHub.</p>
+
+<p>Open the <strong>Settings</strong> tab and move to the <strong>GitHub Pages</strong> section. Enable GitHub Pages feature, select <strong>master branch</strong> as the source and save your changes.</p>
+
+<p>Initiate an empty local Git repository in the root folder of the package repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git init
+</code></pre></div></div>
+
+<p>Export the GPG public key that will be used by clients to verify package signatures.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gpg <span class="nt">--output</span> PUBLIC.KEY <span class="nt">--armor</span> <span class="nt">--export</span> EMAIL.ADDRESS
+</code></pre></div></div>
+
+<p>Copy the public key to the local Git repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mv </span>PUBLIC.KEY REPOSITORY.PATH
+</code></pre></div></div>
+
+<p>Add all repository files to the local repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git add <span class="nt">--all</span>
+git commit <span class="nt">-m</span> <span class="s2">"Package repository release"</span>
+git remote set-url origin git@github.com:USERNAME/REPOSITORY.git
+git push origin master
+</code></pre></div></div>
+
+<h1 id="register-an-external-repository">Register an external repository</h1>
+
+<p>Add the public GPG key to the apt sources keyring.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget <span class="nt">-qO</span> - https://USERNAME.github.io/REPOSITORY/PUBLIC.KEY | <span class="nb">sudo </span>apt-key add -
+</code></pre></div></div>
+
+<p>To list and remove a key from apt sources use the following commands respectively.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>apt-key list
+<span class="nb">sudo </span>apt-key del KEY.ID
+</code></pre></div></div>
+
+<p>Register the external package repository.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>vim /etc/apt/sources.list
+</code></pre></div></div>
+
+<p>Add the following line, replace variables with your values and save your changes.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>deb http://USERNAME.github.io/REPOSITORY CODENAME COMPONENT 
+</code></pre></div></div>
+
+<p>Refresh the apt configuration.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get update
+</code></pre></div></div>
+
+<p>Finally, install the package from your external repository.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo apt-get install PACKAGE
+</code></pre></div></div>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/linux/2017/05/20/linux-managing-remote-machines.html">&laquo; Scalable and Cost Effective Linux Administration</a>
+			
+			
+				<a class="next" href="/latex/2018/01/30/vs-code-latex-editor.html">Visual Studio Code as Latex Editor &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Personal%20DEB%20Package%20Repository%20using%20GitHub%20Pages&url=http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html&description=&title=Personal%20DEB%20Package%20Repository%20using%20GitHub%20Pages?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html&title=Personal%20DEB%20Package%20Repository%20using%20GitHub%20Pages&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/linux/2017/06/30/linux-secure-apt-repository.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

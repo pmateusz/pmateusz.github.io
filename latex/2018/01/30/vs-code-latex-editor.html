@@ -1,0 +1,464 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Visual Studio Code as Latex Editor | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Visual Studio Code as Latex Editor" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This article provides instructions how to setup Visual Studio Code for writing and editing Latex documents. Our previous article on this subject became obsolete due to recent changes in the editor and its plugins. This post aims to provide the most accurate and up to date configuration. Repeating steps of the tutorial should deliver a robust working environment for Latex with syntax highlight, spell checking and live document preview. The post is concluded by feature comparison between Visual Studio Code and Overleaf." />
+<meta property="og:description" content="This article provides instructions how to setup Visual Studio Code for writing and editing Latex documents. Our previous article on this subject became obsolete due to recent changes in the editor and its plugins. This post aims to provide the most accurate and up to date configuration. Repeating steps of the tutorial should deliver a robust working environment for Latex with syntax highlight, spell checking and live document preview. The post is concluded by feature comparison between Visual Studio Code and Overleaf." />
+<link rel="canonical" href="http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html" />
+<meta property="og:url" content="http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-01-30T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"This article provides instructions how to setup Visual Studio Code for writing and editing Latex documents. Our previous article on this subject became obsolete due to recent changes in the editor and its plugins. This post aims to provide the most accurate and up to date configuration. Repeating steps of the tutorial should deliver a robust working environment for Latex with syntax highlight, spell checking and live document preview. The post is concluded by feature comparison between Visual Studio Code and Overleaf.","@type":"BlogPosting","headline":"Visual Studio Code as Latex Editor","dateModified":"2018-01-30T00:00:00+00:00","datePublished":"2018-01-30T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html"},"url":"http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Visual Studio Code as Latex Editor</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/latex/">Latex</a>
+		</span>
+	
+	<span class="post-date">January 30, 2018</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/visual_studio_code_latex_update-6c690386faf536ccb244ca265b0658c17ee9db7bc03ec49f91a5d258f1949ede.png" /></p>
+
+<p>This article provides instructions how to setup Visual Studio Code for writing and editing Latex documents. Our <a href="/latex/2017/03/29/vs-code-latex-editor.html">previous article</a> on this subject became obsolete due to recent changes in the editor and its plugins. This post aims to provide the most accurate and up to date configuration. Repeating steps of the tutorial should deliver a robust working environment for Latex with syntax highlight, spell checking and live document preview. The post is concluded by feature comparison between Visual Studio Code and Overleaf. <!--The extended version of the post contains suggestions for more advanced usage, such as tracking changes with Git and document navigation with bookmarks that should be helpful when editing larger documents.--></p>
+
+<!--more-->
+
+<h2 id="introduction">Introduction</h2>
+
+<p><a href="https://code.visualstudio.com/">Visual Studio Code</a> is a general purpose text editor. Although it can be used to edit any plain text file it shines when working with source code. Its feature set has been selected to offer fast navigation and responsive editing experience in large text files. The editor does not offer out of the box capabilities that one is unlikely to use. Features for a targeted audience are available through extensions. They often belong to one of categories: integration with third-party tools, linters and editor enhancements.</p>
+
+<p>In this tutorial we cover the editor configuration and the most useful extensions for Latex. As of this writing each referenced extension was installed more than 300000 times. Thus they were comprehensively tested and proved their utility in practice.</p>
+
+<p>Even though the article was written using Debian 9.3 (stretch), the instructions from the tutorial should work without any changes on other operating systems, except for the installation of the bare Visual Studio Code editor.</p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+<p>We assume that the programs to build a Latex document and a bibliography from the <code class="highlighter-rouge">.tex</code> and <code class="highlighter-rouge">.bib</code> files respectively are installed on your machine.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pdftex <span class="nt">--version</span>
+bibtex <span class="nt">--version</span>
+</code></pre></div></div>
+
+<p>Otherwise, install relevant software packages for your operating system. Debian/Ubuntu users can accomplish this by installing the <code class="highlighter-rouge">texlive</code> package.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>texlive 
+</code></pre></div></div>
+
+<h2 id="tutorial">Tutorial</h2>
+
+<ol>
+  <li>
+    <p>Download and install Visual Studio Code.</p>
+
+    <p>The commands below will download and install the latest stable version of the editor on Debian/Ubuntu. If you are using a different operating system or want to install an insider distribution see <a href="https://code.visualstudio.com/">the project website</a> for relevant instructions.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code> wget <span class="nt">-Ovscode</span>.deb https://vscode-update.azurewebsites.net/latest/linux-deb-x64/stable
+ <span class="nb">sudo </span>dpkg <span class="nt">--install</span> vscode.deb
+ <span class="nb">sudo </span>apt-get <span class="nb">install</span> <span class="nt">--force</span>
+</code></pre></div>    </div>
+
+    <p>The last command <code class="highlighter-rouge">sudo apt-get install --force</code> downloads and installs all required dependency packages that are currently not installed in the system. Although not strictly necessary in our case it is a good practice to run this command after manual installation of <code class="highlighter-rouge">.deb</code> packages. After successful installation the editor can be launched using the <code class="highlighter-rouge">code</code> command.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>code <span class="nt">--version</span>
+</code></pre></div>    </div>
+
+    <p>You do not need to worry about future updates of Visual Studio Code. During the installation the package repository was added to the list of repositories of Advanced Package Tool (apt).</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cat</span> /etc/apt/sources.list.d/vscode.list 
+   
+<span class="o">&gt;</span> deb https://packages.microsoft.com/repos/vscode stable main
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install extensions.</p>
+
+    <p>Execute the following commands.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code> code <span class="nt">--install-extension</span> James-Yu.latex-workshop
+ code <span class="nt">--install-extension</span> streetsidesoftware.code-spell-checker
+</code></pre></div>    </div>
+    <p>The same can be accomplished using the <em>Extensions</em> toolbar in the editor. To open the toolbar click <em>View</em> in the application menu and then select <em>Extensions</em>.</p>
+
+    <p>The <a href="https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop">Latex Workshop</a> extension offers comprehensive set of features for development of <code class="highlighter-rouge">.tex</code> documents. The most important ones are syntax highlight, error reporting and document preview. The full list of supported actions can be listed using the the <code class="highlighter-rouge">Ctrl+Alt+L</code> keystroke combination. For brevity we are not going to cover all of them here, but we strongly recommend you to try them yourself. For example, the citation browser enables adding references without the need to open and browse the bibliography. The word count is useful for writing abstracts with word limits. Finally, the cleanup of auxiliary files removes all intermediate files created during the Latex and Bibtex compilation.</p>
+
+    <p>The <a href="https://marketplace.visualstudio.com/items?itemName=streetsidesoftware.code-spell-checker">Code Spell Checker</a> extension does no more than its title suggests.</p>
+  </li>
+  <li>
+    <p>Open the directory of your Latex project in Visual Studio Code.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">mkdir </span>latex_project <span class="o">&amp;&amp;</span> code latex_project
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Create Visual Studio Code tasks for building <code class="highlighter-rouge">.tex</code> and <code class="highlighter-rouge">.bib</code> documents.</p>
+
+    <p>Make <code class="highlighter-rouge">.vscode</code> directory in the root directory of your Latex project.</p>
+
+    <p>Create <code class="highlighter-rouge">tasks.json</code> file inside the <code class="highlighter-rouge">.vscode</code> directory with the following content.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{</span>
+ <span class="s2">"version"</span>: <span class="s2">"2.0.0"</span>,
+ <span class="s2">"tasks"</span>: <span class="o">[</span>
+       <span class="o">{</span>
+         <span class="s2">"label"</span>: <span class="s2">"Run pdflatex"</span>,
+         <span class="s2">"type"</span>: <span class="s2">"shell"</span>,
+         <span class="s2">"group"</span>: <span class="o">{</span>
+             <span class="s2">"kind"</span>: <span class="s2">"build"</span>,
+             <span class="s2">"isDefault"</span>: <span class="nb">true</span>
+         <span class="o">}</span>,
+         <span class="s2">"command"</span>: <span class="s2">"pdflatex"</span>,
+         <span class="s2">"args"</span>: <span class="o">[</span>
+             <span class="s2">"-interaction=nonstopmode"</span>,
+             <span class="s2">"-file-line-error"</span>,
+             <span class="s2">"*.tex"</span>
+         <span class="o">]</span>
+     <span class="o">}</span>,
+     <span class="o">{</span>
+         <span class="s2">"label"</span>: <span class="s2">"Run bibtex"</span>,
+         <span class="s2">"type"</span>: <span class="s2">"shell"</span>,
+         <span class="s2">"group"</span>: <span class="o">{</span>
+             <span class="s2">"kind"</span>: <span class="s2">"test"</span>,
+             <span class="s2">"isDefault"</span>: <span class="nb">true</span>
+         <span class="o">}</span>,
+         <span class="s2">"command"</span>: <span class="s2">"bibtex"</span>,
+         <span class="s2">"args"</span>: <span class="o">[</span>
+             <span class="s2">"-terse"</span>,
+             <span class="s2">"*.aux"</span>
+         <span class="o">]</span>
+     <span class="o">}</span>      
+ <span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>The configuration file defines two tasks: <code class="highlighter-rouge">Run pdflatex</code> and <code class="highlighter-rouge">Run bibtex</code>. They correspond to the commands <code class="highlighter-rouge">pdflatex -interaction=nonstopmode -file-line-error *.tex</code> and <code class="highlighter-rouge">bibtex -terse *.aux</code> respectively. The first command is set as the default build task and can be run using the <code class="highlighter-rouge">Ctrl+Shift+B</code> keystroke combination. The other command is set as the default test. Unfortunately, no keystroke is bound to this action by default. If you compile a bibliography often we suggest to bind the task to the <code class="highlighter-rouge">Ctrl+Shift+T</code> keystroke combination or any other you may prefer.</p>
+
+    <p>In order to bind an action to a keystroke open the <em>Keyboard Shortcuts</em> tab using the <code class="highlighter-rouge">Ctrl+K Ctrl+S</code> keystroke combination. Alternatively, in the application menu click <em>File</em>, <em>Preferences</em> and <em>Keyboard Shortcuts</em>. The <em>Keyboard Shortcuts</em> tab should be opened. Search for the <em>Run Test Task</em> (workbench.action.tasks.test) label and set up the keystroke of your choice.</p>
+
+    <p>Besides a keystroke combination Visual Studio Code allows to execute a task using the <em>Task</em> button in the application menu or via the task prompt that can be opened using the <code class="highlighter-rouge">Ctrl+Shift+P</code> keystroke combination.</p>
+  </li>
+  <li>
+    <p>Set up a spell checker.</p>
+
+    <p>Create the <code class="highlighter-rouge">cSpell.json</code> file inside the <code class="highlighter-rouge">.vscode</code> directory with the following content.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{</span>
+ <span class="s2">"version"</span>: <span class="s2">"0.1"</span>,
+ <span class="s2">"language"</span>: <span class="s2">"en"</span>,
+ <span class="s2">"dictionaryDefinitions"</span>: <span class="o">[</span>
+  <span class="o">{</span> <span class="s2">"name"</span>: <span class="s2">"projectDictionary"</span>, <span class="s2">"path"</span>: <span class="s2">"./dictionary.txt"</span><span class="o">}</span>
+ <span class="o">]</span>,
+ <span class="s2">"dictionaries"</span>: <span class="o">[</span><span class="s2">"projectDictionary"</span><span class="o">]</span>,
+ <span class="s2">"languageSettings"</span>: <span class="o">[</span>
+  <span class="o">{</span> <span class="s2">"languageId"</span>: <span class="s2">"*"</span>, <span class="s2">"dictionaries"</span>: <span class="o">[</span><span class="s2">"projectDictionary"</span><span class="o">]</span> <span class="o">}</span>
+ <span class="o">]</span>,
+ <span class="s2">"ignoreRegExpList"</span>: <span class="o">[</span>
+ <span class="s2">"</span><span class="se">\\\\</span><span class="s2">cite{[A-Za-z0-9, -]+}"</span>,
+ <span class="s2">"</span><span class="se">\\\\</span><span class="s2">begin{</span><span class="se">\\</span><span class="s2">w+}"</span>,
+ <span class="s2">"</span><span class="se">\\\\</span><span class="s2">end{</span><span class="se">\\</span><span class="s2">w+}"</span>,
+ <span class="s2">"</span><span class="se">\\\\</span><span class="s2">usepackage{</span><span class="se">\\</span><span class="s2">w+}"</span>,
+ <span class="s2">"</span><span class="se">\\\\</span><span class="s2">bibliographystyle{</span><span class="se">\\</span><span class="s2">w+}"</span>,
+ <span class="s2">"</span><span class="se">\\\\</span><span class="s2">hyphenation{[A-Za-z0-9, -]+}"</span>,
+ <span class="s2">"</span><span class="se">\\</span><span class="s2">w+{?"</span><span class="o">]</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>The configuration instructs the Code Spell Checker to use a default English dictionary extended by a custom list of words loaded from the <code class="highlighter-rouge">dictionary.txt</code> file. Spelling errors will not be reported for Latex commands and text in-between curly brackets of the shortlisted commands.</p>
+
+    <p>Create an empty <code class="highlighter-rouge">dictionary.txt</code> file in the <code class="highlighter-rouge">.vscode</code> directory. It should contain words that are not recognized by the spell checker. An example of the valid file format, a list of words separated by a newline character, is provided below.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>aforementioned
+combinatorial
+decremental
+forementioned
+polytope
+pseudocode
+scalability
+superset
+subproblem
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Alter editor settings for better work with text files.</p>
+
+    <p>Create the <code class="highlighter-rouge">settings.json</code> file with the following content.</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">{</span>  
+  <span class="s2">"cSpell.enabled"</span>: <span class="nb">true</span>,
+  <span class="s2">"editor.cursorBlinking"</span>: <span class="s2">"solid"</span>,
+  <span class="s2">"editor.wordWrap"</span>: <span class="s2">"on"</span>,
+  <span class="s2">"editor.wordWrapColumn"</span>: 80,
+  <span class="s2">"editor.wrappingIndent"</span>: <span class="s2">"same"</span>,
+  <span class="s2">"latex-workshop.debug.showUpdateMessage"</span>: <span class="nb">false</span>,
+  <span class="s2">"telemetry.enableCrashReporter"</span>: <span class="nb">false</span>,
+  <span class="s2">"telemetry.enableTelemetry"</span>: <span class="nb">false</span>
+<span class="o">}</span>
+</code></pre></div>    </div>
+
+    <p>Most of configuration settings above, though difficult to know off the top of one’s head, are self explanatory. The reason for disabling a blinking cursor is the anecdotal evidence that a solid cursor is less distracting and causes less eye fatigue problems. Word wrapping is enabled to get rid of the horizontal scroll bar.</p>
+  </li>
+  <li>
+    <p>Optionally, hide the activity bar.</p>
+
+    <p>Click <em>View</em> in the application menu and then the <em>Hide Activity Bar</em> button. While working with Latex we do not switch between the <em>Explorer</em> and <em>Debugger</em> panels, so the space occupied by the <em>Activity Bar</em> can freed for the document viewport.</p>
+  </li>
+</ol>
+
+<h2 id="other-environments-for-latex">Other Environments for Latex</h2>
+
+<p>It is worth to compare and contrast the working environment developed in this post with competitors. This will make us knowledgeable of other possible options and help avoiding bias while deciding what works best for us.</p>
+
+<p>In our view the most important alternative to the setup we presented is <a href="https://www.overleaf.com/">Overleaf</a>. A web application for creating and editing Latex documents. For quick overview check the list of most important features advertised at <a href="https://www.overleaf.com/benefits">the company website</a>. Overall, we believe that comparing any web application and its desktop companion is like comparing apples to oranges. The first one does not require installation and enables real-time collaboration. On the other hand, the desktop variant can work offline providing simultaneously more responsive and less distracting environment. In a nutshell the same holds between Overleaf and Visual Studio Code.</p>
+
+<p>In our opinion the Overleaf is superior when one works with colleagues and wants to enforce that everyone uses the most recent version of a document to avoid conflict resolution. Secondly, Overleaf has effortless setup. One does not need to install anything Latex specific on a personal computer, so may enjoy an easier start in this environment. However, the free version has restrictions that may hinder productivity. It constrains a project structure, limits the number of files, does not allow to track changes and restore previous revisions of the document. For any larger work that benefits from no distractions, such as writing theses, we strongly recommend Visual Studio Code in conjunction with git for tracking changes.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>If you reached this point you should be set to work with Latex documents. We believe there is few more tips on the subject that would suit everybody. In case you spot an error or know something on the subject you would like to share, you are more than welcome to leave a comment or join the discussion below.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/linux/2017/06/30/linux-secure-apt-repository.html">&laquo; Personal DEB Package Repository using GitHub Pages</a>
+			
+			
+				<a class="next" href="/c++/cmake/2018/03/11/cmake-project-setup.html">CMake Project with Third-party Dependencies &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Visual%20Studio%20Code%20as%20Latex%20Editor&url=http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html&description=&title=Visual%20Studio%20Code%20as%20Latex%20Editor?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html&title=Visual%20Studio%20Code%20as%20Latex%20Editor&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/latex/2018/01/30/vs-code-latex-editor.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>

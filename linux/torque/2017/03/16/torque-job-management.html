@@ -1,0 +1,498 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/favicon.png" alt='Building Pyramids Logo'>
+	<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Job Management in Torque | Building Pyramids</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Job Management in Torque" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This post provides general overview of tools for querying, filtering, cancelling and tracing of Torque jobs." />
+<meta property="og:description" content="This post provides general overview of tools for querying, filtering, cancelling and tracing of Torque jobs." />
+<link rel="canonical" href="http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html" />
+<meta property="og:url" content="http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html" />
+<meta property="og:site_name" content="Building Pyramids" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-03-16T00:00:00+00:00" />
+<script type="application/ld+json">
+{"description":"This post provides general overview of tools for querying, filtering, cancelling and tracing of Torque jobs.","@type":"BlogPosting","headline":"Job Management in Torque","dateModified":"2017-03-16T00:00:00+00:00","datePublished":"2017-03-16T00:00:00+00:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html"},"url":"http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+	<link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Building Pyramids" />
+	<link rel="stylesheet" type="text/css" href="/assets/main-59588d7cfe8dcb6f2848d7e12fc221b7a29e4f8ad7559b996dbff49bf6efe301.css">
+</head>
+	<body>
+		<header>
+			<div class="container">
+				<a href="/">
+					<h1 class="project-name">Building Pyramids</h1>
+				</a>
+      			<span class="project-tagline">Matt Polnik's blog</span>
+				<nav>
+	<a class="nav-toggle" id="open-nav" href="#">&#9776;</a>
+	
+		
+		
+		
+		<a href="/" class="" >Home</a>
+	
+		
+		
+		
+		<a href="/about/" class="" >About</a>
+	
+		
+		
+		
+		<a href="/feed.xml" class="" target="_blank">RSS</a>
+	
+</nav>
+			</div>
+		</header>
+		<section class="main-content">
+	<div class="blog-post">
+	<h1>Job Management in Torque</h1>
+	<p class="post-details">
+	
+		<span class="blog-filter">
+			<a href="/category/linux/">Linux</a>
+		</span>
+	
+		<span class="blog-filter">
+			<a href="/category/torque/">Torque</a>
+		</span>
+	
+	<span class="post-date">March 16, 2017</span>
+</p>
+	<div class="post-content">
+		<p><img src="/assets/job_management_torque-8c6f3655597b188dff479da6f40adc8655bb43a920ffd633e7c26d84c855fb22.png" /></p>
+
+<p>This post provides general overview of tools for querying, filtering, cancelling and tracing of Torque jobs. <!--more--> The suite of command line utilities described in the article can be installed using the <code class="highlighter-rouge">torque-package-clients-linux-x86_64.sh</code> self-extracting script.</p>
+
+<h3 id="querying-and-filtering-jobs">Querying and Filtering Jobs</h3>
+<p>The status of batch jobs can be printed using the <code class="highlighter-rouge">qstat</code> program. By default it displays a list of all jobs in the queue on the server:</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qstat queue-name@server
+
+<span class="c"># Output:</span>
+Job ID                    Name             User            Time Use S Queue
+<span class="nt">-------------------------</span> <span class="nt">----------------</span> <span class="nt">---------------</span> <span class="nt">--------</span> - <span class="nt">-----</span>
+1.server.cluster.org      job.sh           vagrant                0 R batch
+</code></pre></div></div>
+
+<p>If the <code class="highlighter-rouge">queue-name</code> and <code class="highlighter-rouge">server</code> are skipped the jobs in the default queue and on the default server will be listed.</p>
+
+<p>The <code class="highlighter-rouge">S</code> column in the output contains the current status of a job. The list of all available states is presented in the table below.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>C</td>
+      <td>Completed after having run</td>
+    </tr>
+    <tr>
+      <td>E</td>
+      <td>Exiting after having run</td>
+    </tr>
+    <tr>
+      <td>H</td>
+      <td>Held</td>
+    </tr>
+    <tr>
+      <td>Q</td>
+      <td>Queued, eligible to run or be routed</td>
+    </tr>
+    <tr>
+      <td>R</td>
+      <td>Running</td>
+    </tr>
+    <tr>
+      <td>T</td>
+      <td>Transferred to a new location</td>
+    </tr>
+    <tr>
+      <td>W</td>
+      <td>Waiting for execution conditions to be satisfied</td>
+    </tr>
+    <tr>
+      <td>S</td>
+      <td>Suspended</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Total number of results can be limited to jobs owned by the specified user by executing <code class="highlighter-rouge">qstat</code> with the <code class="highlighter-rouge">-u</code> option.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qstat <span class="nt">-u</span> <span class="nv">$USER</span>
+
+<span class="c"># Output:</span>
+server.cluster.org:
+                                                                                  Req<span class="se">\'</span>d       Req<span class="se">\'</span>d       Elap
+Job ID                  Username    Queue    Jobname          SessID  NDS   TSK   Memory      Time    S   Time
+<span class="nt">-----------------------</span> <span class="nt">-----------</span> <span class="nt">--------</span> <span class="nt">----------------</span> <span class="nt">------</span> <span class="nt">-----</span> <span class="nt">------</span> <span class="nt">---------</span> <span class="nt">---------</span> - <span class="nt">---------</span>
+1.server.cluster.org    vagrant     batch    test.sh            9038     1     24       <span class="nt">--</span>   00:10:00 C       <span class="nt">--</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">$USER</code> is the environment variable set to current user in the Bash shell.</p>
+
+<p>The columns of the table above contain the following information:</p>
+<ol>
+  <li>the job identifier assigned by the batch server</li>
+  <li>the job owner</li>
+  <li>the queue in which the job currently resides</li>
+  <li>the job name given by the submitter</li>
+  <li>the session id if the job is running</li>
+  <li>the number of nodes requested by the job</li>
+  <li>the number of cpus or tasks requested by the job</li>
+  <li>the amount of memory requested by the job</li>
+  <li>either the cpu time, if specified, or wall time requested by the job, (hh:mm:ss)</li>
+  <li>the jobs current state</li>
+  <li>the amount of cpu time or wall time used by the job (hh:mm:ss)</li>
+</ol>
+
+<p>The <code class="highlighter-rouge">qstat</code> output can also be narrowed to a specified job or a set of jobs and displayed in a more verbose manner.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qstat <span class="nt">-a</span> first-job-id second-job-id
+
+<span class="c"># Output:</span>
+server.cluster.org:
+                                                                                  Req<span class="se">\'</span>d       Req<span class="se">\'</span>d       Elap
+Job ID                  Username    Queue    Jobname          SessID  NDS   TSK   Memory      Time    S   Time
+<span class="nt">-----------------------</span> <span class="nt">-----------</span> <span class="nt">--------</span> <span class="nt">----------------</span> <span class="nt">------</span> <span class="nt">-----</span> <span class="nt">------</span> <span class="nt">---------</span> <span class="nt">---------</span> - <span class="nt">---------</span>
+1.server.cluster.org    vagrant     batch    test.sh            9091     1     24       <span class="nt">--</span>   00:10:00 C       <span class="nt">--</span>
+</code></pre></div></div>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qstat <span class="nt">-f</span> 1.server.cluster.org
+
+<span class="c"># Output:</span>
+Job Id: 1.server.cluster.org
+    Job_Name <span class="o">=</span> test.sh
+    Job_Owner <span class="o">=</span> vagrant@node1.cluster.org
+    resources_used.cput <span class="o">=</span> 00:00:00
+    resources_used.energy_used <span class="o">=</span> 0
+    resources_used.mem <span class="o">=</span> 780kb
+    resources_used.vmem <span class="o">=</span> 0kb
+    resources_used.walltime <span class="o">=</span> 00:00:00
+    job_state <span class="o">=</span> C
+    queue <span class="o">=</span> batch
+    server <span class="o">=</span> server.cluster.org
+    Checkpoint <span class="o">=</span> u
+    ctime <span class="o">=</span> Sun Mar 19 17:39:12 2017
+    Error_Path <span class="o">=</span> node1.cluster.org:/home/vagrant/test.sh.e25
+    exec_host <span class="o">=</span> server.cluster.org/0
+    Hold_Types <span class="o">=</span> n
+    Join_Path <span class="o">=</span> n
+    Keep_Files <span class="o">=</span> n
+    Mail_Points <span class="o">=</span> a
+    mtime <span class="o">=</span> Sun Mar 19 17:39:21 2017
+    Output_Path <span class="o">=</span> node1.cluster.org:/home/vagrant/test.sh.o25
+    Priority <span class="o">=</span> 0
+    qtime <span class="o">=</span> Sun Mar 19 17:39:12 2017
+    Rerunable <span class="o">=</span> True
+    Resource_List.mppwidth <span class="o">=</span> 24
+    Resource_List.walltime <span class="o">=</span> 00:10:00
+    Resource_List.mppnodect <span class="o">=</span> <span class="nt">-1</span>
+    Resource_List.nodes <span class="o">=</span> 1
+    Resource_List.nodect <span class="o">=</span> 1
+    Resource_List.neednodes <span class="o">=</span> 1
+    session_id <span class="o">=</span> 9091
+    substate <span class="o">=</span> 59
+    Variable_List <span class="o">=</span> <span class="nv">PBS_O_QUEUE</span><span class="o">=</span>batch,PBS_O_HOME<span class="o">=</span>/home/vagrant,
+        <span class="nv">PBS_O_LOGNAME</span><span class="o">=</span>vagrant,
+        <span class="nv">PBS_O_PATH</span><span class="o">=</span>/usr/local/bin:/usr/local/sbin:/usr/local/sbin:/usr/local/
+        bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games,
+        <span class="nv">PBS_O_MAIL</span><span class="o">=</span>/var/mail/vagrant,PBS_O_SHELL<span class="o">=</span>/bin/bash,
+        <span class="nv">PBS_O_LANG</span><span class="o">=</span>en_US.UTF-8,PBS_O_WORKDIR<span class="o">=</span>/home/vagrant,
+        <span class="nv">PBS_O_HOST</span><span class="o">=</span>node1.cluster.org,PBS_O_SERVER<span class="o">=</span>server
+    euser <span class="o">=</span> vagrant
+    egroup <span class="o">=</span> vagrant
+    hashname <span class="o">=</span> 25.server.cluster.org
+    queue_rank <span class="o">=</span> 2
+    queue_type <span class="o">=</span> E
+    sched_hint <span class="o">=</span> Unable to copy files back - please see the mother superior<span class="se">\'</span>s
+        log <span class="k">for </span>exact details.
+    comment <span class="o">=</span> Job started on Sun Mar 19 at 17:39
+    etime <span class="o">=</span> Sun Mar 19 17:39:12 2017
+    exit_status <span class="o">=</span> 0
+    submit_args <span class="o">=</span> test.sh
+    start_time <span class="o">=</span> Sun Mar 19 17:39:12 2017
+    start_count <span class="o">=</span> 1
+    fault_tolerant <span class="o">=</span> False
+    comp_time <span class="o">=</span> Sun Mar 19 17:39:21 2017
+    job_radix <span class="o">=</span> 0
+    total_runtime <span class="o">=</span> 8.200034
+    submit_host <span class="o">=</span> node1.cluster.org
+    init_work_dir <span class="o">=</span> /home/vagrant
+    request_version <span class="o">=</span> 1
+    req_information.task_count.0 <span class="o">=</span> 1
+    req_information.lprocs.0 <span class="o">=</span> 1
+    req_information.thread_usage_policy.0 <span class="o">=</span> allowthreads
+    req_information.hostlist.0 <span class="o">=</span> server.cluster.org:ppn<span class="o">=</span>1
+    req_information.task_usage.0.task.0.cpu_list <span class="o">=</span> 0
+    req_information.task_usage.0.task.0.mem_list <span class="o">=</span> 0
+    req_information.task_usage.0.task.0.cores <span class="o">=</span> 0
+    req_information.task_usage.0.task.0.threads <span class="o">=</span> 1
+    req_information.task_usage.0.task.0.host <span class="o">=</span> server.cluster.org
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">qstat</code> can also be used to print information about the status of a batch server, queues and allocated nodes or display results in a different format. For the full list of supported comamnd line options check the <a href="http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qstat.htm">Administration guide</a> or Linux man pages.</p>
+
+<h3 id="job-cancellation">Job Cancellation</h3>
+
+<p>Running and queued jobs are cancelled using the <code class="highlighter-rouge">qdel</code> utility. Users allowed to perform this action on a job are its owner, the batch server operators and administrators.</p>
+
+<p>If a job is already running a SIGTERM signal is sent the process to allow graceful finish. After a preconfigured delay a SIGKILL signal is sent. The time span between these two signals is a configuration parameter of the execution queue. It can also be specified in the request using <code class="highlighter-rouge">-W</code> option, which takes precedence over the default value.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qdel job-id <span class="nt">-m</span> <span class="s2">"message"</span>
+</code></pre></div></div>
+
+<p>Cancel all jobs owned by the current user. If a job is running, send a SIGTERM signal and wait for 10 seconds before attempting to kill the process.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>qdel all <span class="nt">-W</span> 10
+</code></pre></div></div>
+
+<p>For detailed explaination of flags supported by the <code class="highlighter-rouge">qdel</code> refer to the <a href="http://docs.adaptivecomputing.com/torque/6-1-0/adminGuide/help.htm#topics/torque/commands/qdel.htm">Administrator guide</a> or Linux man pages.</p>
+
+<h3 id="job-troubleshooting">Job Troubleshooting</h3>
+
+<p>Full information about the a Torque job track record is available using the <code class="highlighter-rouge">tracejob</code> utility. Executing the program as a privileged user with the <code class="highlighter-rouge">-v</code> flag allows to locate the computing node assigned by the scheduling process, which may be useful for debugging configuration issues.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>tracejob <span class="nt">-v</span> job-id
+ 
+<span class="c"># Output:</span>
+/var/spool/torque/server_priv/accounting/20170320: Successfully located matching job records
+/var/spool/torque/server_logs/20170320: Successfully located matching job records
+/var/spool/torque/mom_logs/20170320: No such file or directory
+/var/spool/torque/sched_logs/20170320: Successfully located matching job records
+
+Job: server.torque.org
+
+03/20/2017 14:26:52.274 S    enqueuing into batch, state 1 hop 1
+03/20/2017 14:26:52.529 S    Job Modified at request of
+                          root@server.torque.org
+03/20/2017 14:26:52.556 L    Job Run
+03/20/2017 14:26:52.530 S    Job Run at request of
+                          root@server.torque.org
+03/20/2017 14:26:52.556 S    Not sending email: User does not want mail of this
+                          type.
+03/20/2017 14:26:52  A    <span class="nv">queue</span><span class="o">=</span>batch
+03/20/2017 14:26:52  A    <span class="nv">user</span><span class="o">=</span>user <span class="nv">group</span><span class="o">=</span>user <span class="nv">jobname</span><span class="o">=</span>test.sh
+                          <span class="nv">queue</span><span class="o">=</span>batch <span class="nv">ctime</span><span class="o">=</span>1490020012 <span class="nv">qtime</span><span class="o">=</span>1490020012
+                          <span class="nv">etime</span><span class="o">=</span>1490020012 <span class="nv">start</span><span class="o">=</span>1490020012
+                          <span class="nv">owner</span><span class="o">=</span>user@server.torque.org
+                          <span class="nv">exec_host</span><span class="o">=</span>node.torque.ccds.org/0
+                          Resource_List.nodes<span class="o">=</span>1:ppn<span class="o">=</span>1 Resource_List.mem<span class="o">=</span>16mb
+                          Resource_List.walltime<span class="o">=</span>00:10:00
+                          Resource_List.host<span class="o">=</span>XXX.XX.XX.XX
+                          Resource_List.nodect<span class="o">=</span>1 Resource_List.neednodes<span class="o">=</span>1:ppn<span class="o">=</span>1
+</code></pre></div></div>
+
+<p>Hopefully, you will not have to use this command often.</p>
+
+
+		<div class="blog-navigation">
+			
+				<a class="prev" href="/windows/virtualization/2017/02/17/application-virtualization-using-turbo.html">&laquo; Application Virtualization using Turbo.net</a>
+			
+			
+				<a class="next" href="/linux/torque/2017/03/16/torque-job-submission.html">Job Submission in Torque &raquo;</a>
+			
+		</div>
+
+		
+<hr>
+<div class='container social-container'>
+    <h3>Share this post</h3>
+    <ul>
+        <li class='share-email'>
+            <a href='mailto:?subject=Shared%20from%20Matt%20Polnik%27s%20blog%3A%20Building%20Pyramids&body=http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 1504v-768q-32 36-69 66-268 206-426 338-51 43-83 67t-86.5 48.5-102.5 24.5h-2q-48 0-102.5-24.5t-86.5-48.5-83-67q-158-132-426-338-37-30-69-66v768q0 13 9.5 22.5t22.5 9.5h1472q13 0 22.5-9.5t9.5-22.5zm0-1051v-24.5l-.5-13-3-12.5-5.5-9-9-7.5-14-2.5h-1472q-13 0-22.5 9.5t-9.5 22.5q0 168 147 284 193 152 401 317 6 5 35 29.5t46 37.5 44.5 31.5 50.5 27.5 43 9h2q20 0 43-9t50.5-27.5 44.5-31.5 46-37.5 35-29.5q208-165 401-317 54-43 100.5-115.5t46.5-131.5zm128-37v1088q0 66-47 113t-113 47h-1472q-66 0-113-47t-47-113v-1088q0-66 47-113t113-47h1472q66 0 113 47t47 113z"/></svg>	
+	
+                </div>
+                <span>Email</span>
+            </a>
+        </li>
+        <li class='share-facebook'>
+            <a id='facebook-share'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1343 12v264h-157q-86 0-116 36t-30 108v189h293l-39 296h-254v759h-306v-759h-255v-296h255v-218q0-186 104-288.5t277-102.5q147 0 228 12z"/></svg>
+	
+                </div>
+                <span>Facebook</span>
+            </a>
+        </li>
+        <li class='share-messenger'>
+            <a id='messenger-send'>
+                <div>
+                
+		<svg xmlns="http://www.w3.org/2000/svg" height="226px" width="224px" version="1.1" viewBox="0 0 224 226">
+		<path d="m41.255 185.52v40.2l37.589-21.37c10.478 3.02 21.616 4.65 33.156 4.65 61.86 0 112-46.79 112-104.5 0-57.714-50.14-104.5-112-104.5-61.856 0-112 46.786-112 104.5 0 32.68 16.078 61.86 41.255 81.02z"/>
+		<path fill="#0084ff" d="m100.04 75.878l-60.401 63.952 54.97-30.16 28.721 30.16 60.06-63.952-54.36 29.632-28.99-29.632z"/>
+		</svg>
+	
+                </div>
+                <span>Messenger</span>
+            </a>
+        </li>
+        <li class='share-twitter'>
+            <a href='https://twitter.com/intent/tweet?text=Job%20Management%20in%20Torque&url=http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html'>
+                <div>
+                
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1684 408q-67 98-162 167 1 14 1 42 0 130-38 259.5t-115.5 248.5-184.5 210.5-258 146-323 54.5q-271 0-496-145 35 4 78 4 225 0 401-138-105-2-188-64.5t-114-159.5q33 5 61 5 43 0 85-11-112-23-185.5-111.5t-73.5-205.5v-4q68 38 146 41-66-44-105-115t-39-154q0-88 44-163 121 149 294.5 238.5t371.5 99.5q-8-38-8-74 0-134 94.5-228.5t228.5-94.5q140 0 236 102 109-21 205-78-37 115-142 178 93-10 186-50z"/></svg>
+
+                </div>
+                <span>Twitter</span>
+            </a>
+        </li>
+        <li class='share-pinterest'>
+            <!-- todo add pinterest media tag -->
+            <a href="https://pinterest.com/pin/create/bookmarklet/?url=http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html&description=&title=Job%20Management%20in%20Torque?cb=1">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M256 597q0-108 37.5-203.5t103.5-166.5 152-123 185-78 202-26q158 0 294 66.5t221 193.5 85 287q0 96-19 188t-60 177-100 149.5-145 103-189 38.5q-68 0-135-32t-96-88q-10 39-28 112.5t-23.5 95-20.5 71-26 71-32 62.5-46 77.5-62 86.5l-14 5-9-10q-15-157-15-188 0-92 21.5-206.5t66.5-287.5 52-203q-32-65-32-169 0-83 52-156t132-73q61 0 95 40.5t34 102.5q0 66-44 191t-44 187q0 63 45 104.5t109 41.5q55 0 102-25t78.5-68 56-95 38-110.5 20-111 6.5-99.5q0-173-109.5-269.5t-285.5-96.5q-200 0-334 129.5t-134 328.5q0 44 12.5 85t27 65 27 45.5 12.5 30.5q0 28-15 73t-37 45q-2 0-17-3-51-15-90.5-56t-61-94.5-32.5-108-11-106.5z"/></svg>
+	
+                </div>
+                <span>Pinterest</span>
+            </a>
+        </li>
+        <li class='share-linkedin'>
+            <a href="https://www.linkedin.com/shareArticle?mini=true&url=http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html&title=Job%20Management%20in%20Torque&summary=&source=Matt%27s+Polnik+blog%3a+Building+Pyramids">
+                <div>
+                    
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+                </div>
+                <span>LinkedIn</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId: '1866957386908319',
+      xfbml: true,
+      version: 'v2.8'
+    });
+  };
+
+  (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = '//connect.facebook.net/en_US/sdk.js';
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    document.getElementById('facebook-share').onclick = function () {
+        FB.ui({
+            method: 'share',
+            href: 'http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html',
+        }, function(response){});
+	    return false;
+    };
+
+    document.getElementById('messenger-send').onclick = function () {
+        FB.ui({
+            method: 'send',
+            link: 'http://localhost:4000/linux/torque/2017/03/16/torque-job-management.html',
+        }, function(response){});
+	    return false;
+    };
+</script>
+		
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var d = document, s = d.createElement('script');
+        s.src = '//pmateusz-github-io.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+	</div>
+</div>
+</section>
+		<footer>
+			<div class="container">
+				<div class="footer-columns">
+					
+					<ul class="footer-links">
+						
+							<li><a  href="/" >
+								
+								Home</a></li>
+						
+							<li><a  href="/about/" >
+								
+								About</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="https://github.com/pmateusz" class="GitHub-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1664 896q0 251-146.5 451.5t-378.5 277.5q-27 5-39.5-7t-12.5-30v-211q0-97-52-142 57-6 102.5-18t94-39 81-66.5 53-105 20.5-150.5q0-121-79-206 37-91-8-204-28-9-81 11t-92 44l-38 24q-93-26-192-26t-192 26q-16-11-42.5-27t-83.5-38.5-86-13.5q-44 113-7 204-79 85-79 206 0 85 20.5 150t52.5 105 80.5 67 94 39 102.5 18q-40 36-49 103-21 10-45 15t-57 5-65.5-21.5-55.5-62.5q-19-32-48.5-52t-49.5-24l-20-3q-21 0-29 4.5t-5 11.5 9 14 13 12l7 5q22 10 43.5 38t31.5 51l10 23q13 38 44 61.5t67 30 69.5 7 55.5-3.5l23-4q0 38 .5 89t.5 54q0 18-13 30t-40 7q-232-77-378.5-277.5t-146.5-451.5q0-209 103-385.5t279.5-279.5 385.5-103 385.5 103 279.5 279.5 103 385.5z"/></svg>	
+	
+								
+								GitHub</a></li>
+						
+							<li><a target="_blank" href="https://www.linkedin.com/in/mateusz-polnik-a43067a4" class="LinkedIn-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M477 625v991h-330v-991h330zm21-306q1 73-50.5 122t-135.5 49h-2q-82 0-132-49t-50-122q0-74 51.5-122.5t134.5-48.5 133 48.5 51 122.5zm1166 729v568h-329v-530q0-105-40.5-164.5t-126.5-59.5q-63 0-105.5 34.5t-63.5 85.5q-11 30-11 81v553h-329q2-399 2-647t-1-296l-1-48h329v144h-2q20-32 41-56t56.5-52 87-43.5 114.5-15.5q171 0 275 113.5t104 332.5z"/></svg>	
+	
+								
+								LinkedIn</a></li>
+						
+							<li><a target="_blank" href="https://tripadvisor.com/members/887mateuszp" class="TripAdvisor-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M395 997q0 39-27.5 66.5t-65.5 27.5q-39 0-66.5-27.5t-27.5-66.5q0-38 27.5-65.5t66.5-27.5q38 0 65.5 27.5t27.5 65.5zm1154-1q0 39-27.5 66.5t-66.5 27.5-66.5-27.5-27.5-66.5 27.5-66 66.5-27 66.5 27 27.5 66zm-1040 1q0-79-56.5-136t-136.5-57-136.5 56.5-56.5 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm1153-1q0-80-56.5-136.5t-136.5-56.5q-79 0-136 56.5t-57 136.5 56.5 136.5 136.5 56.5 136.5-56.5 56.5-136.5zm-1068 1q0 116-81.5 197.5t-196.5 81.5q-116 0-197.5-82t-81.5-197 82-196.5 197-81.5 196.5 81.5 81.5 196.5zm1154-1q0 115-81.5 196.5t-197.5 81.5q-115 0-196.5-81.5t-81.5-196.5 81.5-196.5 196.5-81.5q116 0 197.5 81.5t81.5 196.5zm-964 3q0-191-135.5-326.5t-326.5-135.5q-125 0-231 62t-168 168.5-62 231.5 62 231.5 168 168.5 231 62q191 0 326.5-135.5t135.5-326.5zm668-573q-254-111-556-111-319 0-573 110 117 0 223 45.5t182.5 122.5 122 183 45.5 223q0-115 43.5-219.5t118-180.5 177.5-123 217-50zm479 573q0-191-135-326.5t-326-135.5-326.5 135.5-135.5 326.5 135.5 326.5 326.5 135.5 326-135.5 135-326.5zm-266-566h383q-44 51-75 114.5t-40 114.5q110 151 110 337 0 156-77 288t-209 208.5-287 76.5q-133 0-249-56t-196-155q-47 56-129 179-11-22-53.5-82.5t-74.5-97.5q-80 99-196.5 155.5t-249.5 56.5q-155 0-287-76.5t-209-208.5-77-288q0-186 110-337-9-51-40-114.5t-75-114.5h365q149-100 355-156.5t432-56.5q224 0 421 56t348 157z"/></svg>
+	
+								
+								TripAdvisor</a></li>
+						
+					</ul>
+					
+					<ul class="footer-links">
+						
+							<li><a target="_blank" href="/feed.xml" class="RSS-icon">
+								
+									
+		<svg width="1792" height="1792" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M576 1344q0 80-56 136t-136 56-136-56-56-136 56-136 136-56 136 56 56 136zm512 123q2 28-17 48-18 21-47 21h-135q-25 0-43-16.5t-20-41.5q-22-229-184.5-391.5t-391.5-184.5q-25-2-41.5-20t-16.5-43v-135q0-29 21-47 17-17 43-17h5q160 13 306 80.5t259 181.5q114 113 181.5 259t80.5 306zm512 2q2 27-18 47-18 20-46 20h-143q-26 0-44.5-17.5t-19.5-42.5q-12-215-101-408.5t-231.5-336-336-231.5-408.5-102q-25-1-42.5-19.5t-17.5-43.5v-143q0-28 20-46 18-18 44-18h3q262 13 501.5 120t425.5 294q187 186 294 425.5t120 501.5z"/></svg>
+	
+								
+								RSS</a></li>
+						
+					</ul>
+					
+				</div>
+				<p class="copyright">&copy; 2020 Mateusz Polnik • Derived from templates by <a href="https://cloudcannon.com/">CloudCannon</a> &amp; <a href="https://github.com/">GitHub</a></p>
+			</div>
+		</footer>
+		<script>
+			document.getElementById("open-nav").onclick = function () {
+				document.body.classList.toggle("nav-open");
+				return false;
+			};
+		</script>
+		
+	</body>
+</html>
